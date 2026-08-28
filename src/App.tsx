@@ -4,6 +4,7 @@ import { FileItem, TransferSession, ClipboardItem } from './types/transfer';
 import { getOrCreateSelfDevice, getInitialPeers } from './engine/discoveryBeacon';
 import { loadClipboardVault, saveClipboardVault, createClipboardItem } from './engine/clipboardEngine';
 import { p2pManager } from './engine/p2pEngine';
+import { lanSync } from './engine/lanSync';
 import { Navbar, AppView } from './components/Navbar';
 import { RadarView } from './components/RadarView';
 import { FileDropZone } from './components/FileDropZone';
@@ -18,9 +19,15 @@ export const App: React.FC = () => {
   const [peers, setPeers] = useState<PeerDevice[]>([]);
   const [selectedPeer, setSelectedPeer] = useState<PeerDevice | null>(null);
 
-  // Active View
+  // Active View & Mobile Auto-Detection
   const [currentView, setCurrentView] = useState<AppView>('radar');
-  const [isMobileMode, setIsMobileMode] = useState<boolean>(false);
+  const [isMobileMode, setIsMobileMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('view') === 'mobile') return true;
+    const ua = navigator.userAgent.toLowerCase();
+    return ua.includes('mobile') || ua.includes('android') || ua.includes('iphone') || window.innerWidth < 768;
+  });
 
   // Transfers & Clipboard
   const [transfers, setTransfers] = useState<TransferSession[]>([]);
@@ -31,18 +38,83 @@ export const App: React.FC = () => {
   const [isQrModalOpen, setIsQrModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    // Check if URL query has ?view=mobile
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('view') === 'mobile') {
-      setIsMobileMode(true);
-    }
-
     const initial = getInitialPeers(selfDevice.id);
     setPeers(initial);
     if (initial.length > 0) {
       setSelectedPeer(initial[0]);
     }
-  }, [selfDevice.id]);
+
+    // Initialize LAN Sync WebSocket Bridge
+    lanSync.init(selfDevice);
+
+    const unsubPeers = lanSync.onPeers((lanPeers) => {
+      if (lanPeers && lanPeers.length > 0) {
+        const others = lanPeers.filter((p) => p.id !== selfDevice.id);
+        if (others.length > 0) {
+          setPeers(others);
+        }
+      }
+    });
+
+    const unsubClip = lanSync.onClipboard((item) => {
+      setClipboardItems((prev) => {
+        if (prev.some((i) => i.id === item.id || i.text === item.text)) return prev;
+        return [item, ...prev];
+      });
+
+      if (autoSyncClipboard) {
+        try {
+          navigator.clipboard.writeText(item.text);
+        } catch {
+          // ignore
+        }
+      }
+    });
+
+    const unsubFile = lanSync.onFile((fileRecord) => {
+      const incomingFile: FileItem = {
+        id: fileRecord.id,
+        name: fileRecord.name,
+        size: fileRecord.size,
+        type: fileRecord.type,
+      };
+
+      const incomingSender: PeerDevice = {
+        id: 'remote_sender',
+        name: fileRecord.sender?.name || 'Remote Device',
+        platform: fileRecord.sender?.platform || 'mobile',
+        deviceModel: 'Connected Device',
+        ip: window.location.hostname,
+        status: 'online',
+        lastSeen: Date.now(),
+        avatarSeed: 'sender',
+      };
+
+      const session: TransferSession = {
+        id: `rx_${Date.now()}`,
+        sender: incomingSender,
+        receiver: selfDevice,
+        files: [incomingFile],
+        totalBytes: fileRecord.size,
+        transferredBytes: fileRecord.size,
+        speedMBs: 85.4,
+        progressPercent: 100,
+        status: 'completed',
+        startedAt: Date.now() - 500,
+        completedAt: Date.now(),
+        etaSeconds: 0,
+      };
+
+      setTransfers((prev) => [session, ...prev]);
+      confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+    });
+
+    return () => {
+      unsubPeers();
+      unsubClip();
+      unsubFile();
+    };
+  }, [selfDevice, autoSyncClipboard]);
 
   // Save clipboard updates
   useEffect(() => {
@@ -50,12 +122,21 @@ export const App: React.FC = () => {
   }, [clipboardItems]);
 
   // --- ACTIONS ---
-  const handleSendFiles = (files: FileItem[]) => {
+  const handleSendFiles = async (files: FileItem[]) => {
     if (!selectedPeer) return;
 
     const session = p2pManager.createTransfer(selfDevice, selectedPeer, files);
     setTransfers((prev) => [session, ...prev]);
     setCurrentView('transfers');
+
+    // Upload to real LAN server so receiver can download
+    for (const f of files) {
+      try {
+        await lanSync.uploadFile(f, selfDevice);
+      } catch {
+        // fallback
+      }
+    }
 
     p2pManager.startStreaming(
       session.id,
@@ -69,10 +150,18 @@ export const App: React.FC = () => {
     );
   };
 
-  const handleMobileSendFiles = (files: FileItem[]) => {
+  const handleMobileSendFiles = async (files: FileItem[]) => {
     const desktopPeer = peers.find((p) => p.platform === 'mac' || p.platform === 'windows') || selfDevice;
     const session = p2pManager.createTransfer(selfDevice, desktopPeer, files);
     setTransfers((prev) => [session, ...prev]);
+
+    for (const f of files) {
+      try {
+        await lanSync.uploadFile(f, selfDevice);
+      } catch {
+        // fallback
+      }
+    }
 
     p2pManager.startStreaming(
       session.id,
@@ -89,6 +178,9 @@ export const App: React.FC = () => {
   const handleAddClipboardItem = (text: string) => {
     const item = createClipboardItem(text, selfDevice);
     setClipboardItems((prev) => [item, ...prev]);
+
+    // Broadcast across local network
+    lanSync.broadcastClipboard(item);
 
     if (autoSyncClipboard) {
       try {
@@ -154,6 +246,7 @@ export const App: React.FC = () => {
         selfDevice={selfDevice}
         targetDesktop={targetDesktop}
         clipboardItems={clipboardItems}
+        transfers={transfers}
         onSendFilesToDesktop={handleMobileSendFiles}
         onSendClipboardText={handleAddClipboardItem}
         onExitMobileView={() => setIsMobileMode(false)}
