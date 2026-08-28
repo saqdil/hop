@@ -70,7 +70,7 @@ export const MobileView: React.FC<Props> = ({
           <div>
             <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
               <Smartphone className="w-3.5 h-3.5 text-sky-400" />
-              <span>AirDropX Mobile</span>
+              <span>Hop Mobile</span>
             </div>
             <div className="text-[10px] font-mono text-zinc-400">
               Connected to {targetDesktop.name}
@@ -129,7 +129,7 @@ export const MobileView: React.FC<Props> = ({
             className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/35 text-emerald-300 text-xs font-mono flex items-center gap-2"
           >
             <Check className="w-4 h-4 text-emerald-400" />
-            <span>Files sent to {targetDesktop.name} at line speed!</span>
+            <span>Hopped to {targetDesktop.name} at line speed!</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -176,7 +176,7 @@ export const MobileView: React.FC<Props> = ({
             onClick={() => {
               const demoPhoto: FileItem = {
                 id: `phone_pic_${Date.now()}`,
-                name: 'IMG_4892_Apple_Vision_Sample.heic',
+                name: 'IMG_4892_Photonics_Lab_Sample.heic',
                 size: 6.4 * 1024 * 1024,
                 type: 'image/heic',
               };
@@ -187,7 +187,7 @@ export const MobileView: React.FC<Props> = ({
             className="w-full py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/10 text-xs font-mono text-zinc-300 flex items-center justify-center gap-1.5 border border-white/[0.08]"
           >
             <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-            Send Sample Camera Roll Photo (6.4 MB)
+            Hop Sample Photo to Desktop (6.4 MB)
           </button>
         </div>
       )}
@@ -213,7 +213,7 @@ export const MobileView: React.FC<Props> = ({
               className="w-full py-2.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-950 font-sans font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-[0.98] disabled:opacity-40"
             >
               <Send className="w-3.5 h-3.5" />
-              <span>Blast Text to Desktop</span>
+              <span>Hop Text to Desktop</span>
             </button>
           </form>
 

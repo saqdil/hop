@@ -27,7 +27,7 @@ export const TransferQueue: React.FC<Props> = ({
   };
 
   const handleDownloadFile = (fileName: string) => {
-    const blob = new Blob([`AirDropX Transferred Payload for ${fileName}`], { type: 'text/plain' });
+    const blob = new Blob([`Hop Transferred Payload for ${fileName}`], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -46,7 +46,7 @@ export const TransferQueue: React.FC<Props> = ({
           </div>
           <div>
             <h2 className="text-base font-semibold text-white tracking-tight flex items-center gap-2 font-sans">
-              P2P Transfer Activity
+              Hop Transfer Activity
               <span className="text-xs font-mono px-2 py-0.5 rounded-lg bg-white/[0.08] text-zinc-300 border border-white/10">
                 {transfers.length} sessions
               </span>
@@ -74,7 +74,7 @@ export const TransferQueue: React.FC<Props> = ({
             <ArrowUpDown className="w-8 h-8 text-zinc-600 mx-auto" />
             <h3 className="text-sm font-semibold text-white font-sans">No Active Transfers</h3>
             <p className="text-xs text-zinc-400 max-w-sm mx-auto">
-              Select a device on the radar and drop files to start an encrypted high-speed LAN drop.
+              Select a device on the radar and drop files to start an encrypted high-speed LAN hop.
             </p>
           </div>
         ) : (

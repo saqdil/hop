@@ -75,13 +75,13 @@ export const FileDropZone: React.FC<Props> = ({ selectedPeer, onSendFiles }) => 
     const demoItems: FileItem[] = [
       {
         id: `demo_1_${Date.now()}`,
-        name: 'RAW_Photonics_Test_Sample_2026.csv',
+        name: 'Photonics_Wafer_Scan_2026.csv',
         size: 14.8 * 1024 * 1024,
         type: 'text/csv',
       },
       {
         id: `demo_2_${Date.now()}`,
-        name: 'Lumilens_Wafer_Scan_4K.mov',
+        name: 'Optical_Lab_Recording_4K.mov',
         size: 84.5 * 1024 * 1024,
         type: 'video/quicktime',
       },
@@ -105,10 +105,10 @@ export const FileDropZone: React.FC<Props> = ({ selectedPeer, onSendFiles }) => 
           <span className="text-xs font-semibold text-white font-sans">
             {selectedPeer ? (
               <>
-                Sending to <span className="text-sky-400 font-mono">{selectedPeer.name}</span>
+                Target Device: <span className="text-sky-400 font-mono">{selectedPeer.name}</span>
               </>
             ) : (
-              'Select a device in the radar above to send'
+              'Select a device in the radar above to hop files'
             )}
           </span>
         </div>
@@ -218,7 +218,7 @@ export const FileDropZone: React.FC<Props> = ({ selectedPeer, onSendFiles }) => 
               className="w-full py-3 rounded-2xl bg-gradient-to-b from-sky-400 to-blue-600 hover:from-sky-300 hover:to-blue-500 text-white font-sans font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-lg active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Send className="w-4 h-4" />
-              {selectedPeer ? `AirDrop ${stagedFiles.length} File${stagedFiles.length > 1 ? 's' : ''} to ${selectedPeer.name}` : 'Select a Target Device Above to Send'}
+              {selectedPeer ? `Hop ${stagedFiles.length} File${stagedFiles.length > 1 ? 's' : ''} to ${selectedPeer.name}` : 'Select a Target Device Above to Send'}
             </button>
           </motion.div>
         )}

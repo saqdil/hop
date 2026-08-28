@@ -121,7 +121,7 @@ export const ClipboardSync: React.FC<Props> = ({
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder="Type or paste text, URLs, OTP codes, or code snippets to blast to all devices..."
+          placeholder="Type or paste text, URLs, OTP codes, or code snippets to hop to all devices..."
           className="flex-1 h-10 px-3.5 rounded-xl bg-black/40 border border-white/[0.08] text-white placeholder-zinc-500 font-mono text-xs focus:outline-none focus:border-white/30"
         />
         <button
@@ -130,7 +130,7 @@ export const ClipboardSync: React.FC<Props> = ({
           className="h-10 px-5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-950 font-sans font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-[0.98] disabled:opacity-40"
         >
           <Send className="w-3.5 h-3.5" />
-          <span>Blast to LAN</span>
+          <span>Hop to LAN</span>
         </button>
       </form>
 
@@ -164,7 +164,7 @@ export const ClipboardSync: React.FC<Props> = ({
             <Clipboard className="w-8 h-8 text-zinc-600 mx-auto" />
             <h3 className="text-sm font-semibold text-white font-sans">No Clipboard History Yet</h3>
             <p className="text-xs text-zinc-400 max-w-sm mx-auto">
-              Whenever you copy text on your phone or PC, AirDropX synchronizes it here instantly.
+              Whenever you copy text on your phone or PC, Hop synchronizes it here instantly.
             </p>
           </div>
         ) : (

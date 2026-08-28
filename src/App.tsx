@@ -176,7 +176,7 @@ export const App: React.FC = () => {
       />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
-        {/* VIEW 1: AIRDROP RADAR & FILE DROP */}
+        {/* VIEW 1: RADAR & FILE DROP */}
         {currentView === 'radar' && (
           <div className="space-y-6">
             <RadarView
@@ -228,7 +228,7 @@ export const App: React.FC = () => {
       />
 
       <footer className="border-t border-white/[0.08] py-5 text-center text-xs text-zinc-500 font-mono">
-        AirDropX &bull; universal P2P LAN drop &amp; live clipboard &bull; zero cloud &bull; end-to-end local encryption
+        Hop &bull; universal P2P LAN drop &amp; live clipboard &bull; zero cloud &bull; local encrypted Wi-Fi
       </footer>
     </div>
   );

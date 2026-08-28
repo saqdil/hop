@@ -1,6 +1,6 @@
 ﻿import React from 'react';
 import { PeerDevice } from '../types/peer';
-import { Radio, QrCode, Clipboard, ArrowUpDown, Laptop, Smartphone, Wifi } from 'lucide-react';
+import { Radio, QrCode, Clipboard, ArrowUpDown, Laptop, Smartphone, Wifi, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export type AppView = 'radar' | 'clipboard' | 'transfers';
@@ -23,7 +23,7 @@ export const Navbar: React.FC<Props> = ({
   clipboardItemsCount,
 }) => {
   const views = [
-    { id: 'radar' as AppView, label: 'AirDrop Radar', icon: Radio },
+    { id: 'radar' as AppView, label: 'Radar', icon: Radio },
     { id: 'clipboard' as AppView, label: 'Live Clipboard', icon: Clipboard, badge: clipboardItemsCount },
     { id: 'transfers' as AppView, label: 'Transfers', icon: ArrowUpDown, badge: activeTransfersCount },
   ];
@@ -35,10 +35,10 @@ export const Navbar: React.FC<Props> = ({
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-b from-sky-400 to-blue-600 text-white shadow-sm">
-              <Radio className="w-4 h-4 animate-pulse" />
+              <Zap className="w-4 h-4 fill-white" />
             </div>
             <span className="font-semibold text-sm tracking-tight text-white font-mono hidden sm:inline">
-              AirDrop<span className="text-sky-400">X</span>
+              Hop<span className="text-sky-400">.</span>
             </span>
           </div>
 

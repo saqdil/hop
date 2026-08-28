@@ -1,4 +1,4 @@
-﻿# 🛰️ AirDropX
+﻿# ⚡ Hop
 
 > **Universal Cross-Platform P2P LAN Drop & Real-Time Shared Clipboard Studio**  
 > *Seamlessly connect Windows, macOS, Linux, iPhone, and Android over local Wi-Fi with line-speed file streaming, zero cloud upload, and real-time clipboard mirroring.*
@@ -8,7 +8,7 @@
 ## 🌟 Key Features
 
 ### 1. 📱 Zero-Install Mobile Pairing (iOS & Android)
-* **Scan & Drop:** Generate a local pairing QR code on your PC screen $\rightarrow$ Scan with standard **iPhone Camera** or **Android Google Lens**.
+* **Scan & Hop:** Generate a local pairing QR code on your PC screen $\rightarrow$ Scan with standard **iPhone Camera** or **Android Google Lens**.
 * **Direct Web PWA:** Opens instantly in mobile Safari / Chrome without needing an App Store installation.
 * **Camera Roll Drop:** Send photos/videos directly from mobile gallery to PC at full Wi-Fi line speed (50–100+ MB/s).
 
@@ -30,10 +30,10 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/saqdil/airdrop-x.git
+git clone https://github.com/saqdil/hop.git
 
 # Install dependencies
-cd airdrop-x
+cd hop
 npm install
 
 # Start local dev server
