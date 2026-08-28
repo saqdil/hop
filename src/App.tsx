@@ -15,13 +15,23 @@ import { MobilePairModal } from './components/MobilePairModal';
 import { HotspotDirectModal } from './components/HotspotDirectModal';
 import { MediaViewerModal } from './components/MediaViewerModal';
 import { DownloadAppModal } from './components/DownloadAppModal';
+import { SecurityPromptModal, SecurityRequest } from './components/SecurityPromptModal';
 import { MobileView } from './components/mobile/MobileView';
 import confetti from 'canvas-confetti';
+
+const STORAGE_KEY_TRUSTED = 'hop_trusted_devices';
 
 export const App: React.FC = () => {
   const [selfDevice] = useState<PeerDevice>(() => getOrCreateSelfDevice());
   const [peers, setPeers] = useState<PeerDevice[]>([]);
   const [selectedPeer, setSelectedPeer] = useState<PeerDevice | null>(null);
+  const [trustedDevices, setTrustedDevices] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY_TRUSTED) || '[]');
+    } catch {
+      return [];
+    }
+  });
 
   // Active View & Mobile Auto-Detection
   const [currentView, setCurrentView] = useState<AppView>('radar');
@@ -38,16 +48,25 @@ export const App: React.FC = () => {
   const [clipboardItems, setClipboardItems] = useState<ClipboardItem[]>(() => loadClipboardVault());
   const [autoSyncClipboard, setAutoSyncClipboard] = useState<boolean>(true);
 
-  // Modals
+  // Modals & Prompts
   const [isQrModalOpen, setIsQrModalOpen] = useState<boolean>(false);
   const [isHotspotModalOpen, setIsHotspotModalOpen] = useState<boolean>(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState<boolean>(false);
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
+  const [pendingSecurityRequest, setPendingSecurityRequest] = useState<SecurityRequest | null>(null);
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
+
+    // Capture Android Chrome WebAPK install prompt
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setDeferredInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
     const initial = getInitialPeers(selfDevice.id);
     setPeers(initial);
@@ -94,7 +113,7 @@ export const App: React.FC = () => {
       };
 
       const incomingSender: PeerDevice = {
-        id: 'remote_sender',
+        id: fileRecord.sender?.name ? `dev_${fileRecord.sender.name}` : 'remote_sender',
         name: fileRecord.sender?.name || 'Remote Device',
         platform: fileRecord.sender?.platform || 'mobile',
         deviceModel: 'Connected Device',
@@ -118,6 +137,19 @@ export const App: React.FC = () => {
         completedAt: Date.now(),
         etaSeconds: 0,
       };
+
+      // Check if trusted, else trigger security connection prompt
+      const senderKey = `${incomingSender.name}_${incomingSender.ip}`;
+      if (!trustedDevices.includes(senderKey) && !trustedDevices.includes('all')) {
+        setPendingSecurityRequest({
+          id: `req_${Date.now()}`,
+          sender: incomingSender,
+          action: 'file_transfer',
+          details: `${fileRecord.name} (${Math.round(fileRecord.size / 1024)} KB)`,
+          pin: Math.floor(1000 + Math.random() * 9000).toString(),
+          timestamp: Date.now(),
+        });
+      }
 
       setTransfers((prev) => [session, ...prev]);
       confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
@@ -147,13 +179,28 @@ export const App: React.FC = () => {
       unsubPeers();
       unsubClip();
       unsubFile();
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
     };
-  }, [selfDevice, autoSyncClipboard]);
+  }, [selfDevice, autoSyncClipboard, trustedDevices]);
 
   // Save clipboard updates
   useEffect(() => {
     saveClipboardVault(clipboardItems);
   }, [clipboardItems]);
+
+  const handleSecurityAllow = (request: SecurityRequest, trustAlways: boolean) => {
+    if (trustAlways) {
+      const senderKey = `${request.sender.name}_${request.sender.ip}`;
+      const updated = [...trustedDevices, senderKey];
+      setTrustedDevices(updated);
+      localStorage.setItem(STORAGE_KEY_TRUSTED, JSON.stringify(updated));
+    }
+    setPendingSecurityRequest(null);
+  };
+
+  const handleSecurityDecline = (_request: SecurityRequest) => {
+    setPendingSecurityRequest(null);
+  };
 
   // --- ACTIONS ---
   const handleSendFiles = async (files: FileItem[]) => {
@@ -300,6 +347,12 @@ export const App: React.FC = () => {
           isOpen={Boolean(previewFile)}
           onClose={() => setPreviewFile(null)}
         />
+
+        <SecurityPromptModal
+          request={pendingSecurityRequest}
+          onAllow={handleSecurityAllow}
+          onDecline={handleSecurityDecline}
+        />
       </>
     );
   }
@@ -382,12 +435,19 @@ export const App: React.FC = () => {
         isOpen={isDownloadModalOpen}
         onClose={() => setIsDownloadModalOpen(false)}
         localIp={selfDevice.ip}
+        deferredInstallPrompt={deferredInstallPrompt}
       />
 
       <MediaViewerModal
         file={previewFile}
         isOpen={Boolean(previewFile)}
         onClose={() => setPreviewFile(null)}
+      />
+
+      <SecurityPromptModal
+        request={pendingSecurityRequest}
+        onAllow={handleSecurityAllow}
+        onDecline={handleSecurityDecline}
       />
 
       <footer className="border-t border-white/[0.08] py-5 text-center text-xs text-zinc-500 font-mono">

@@ -8,22 +8,24 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 5180;
-const UPLOAD_DIR = path.join(__dirname, '.hop_uploads');
+const UPLOAD_DIR = path.resolve(path.join(__dirname, '.hop_uploads'));
 
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
 // In-memory stores
-const activeFiles = new Map(); // id -> { id, name, size, type, path, sender, timestamp }
-const clipboardHistory = []; // list of { id, text, sourceDevice, timestamp, isPinned, category }
-const connectedPeers = new Map(); // ws -> peerInfo
+const activeFiles = new Map();
+const clipboardHistory = [];
+const connectedPeers = new Map();
 
 const server = http.createServer(async (req, res) => {
-  // CORS Headers
+  // CORS & Security Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-file-name, x-file-type, x-sender-name, x-sender-platform');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
@@ -33,14 +35,22 @@ const server = http.createServer(async (req, res) => {
 
   const url = new URL(req.url, `http://${req.headers.host}`);
 
-  // API 1: File Download endpoint
+  // API 1: File Download endpoint with path traversal validation
   if (url.pathname.startsWith('/api/download/')) {
-    const fileId = url.pathname.replace('/api/download/', '');
+    const fileId = url.pathname.replace('/api/download/', '').replace(/[^a-zA-Z0-9_-]/g, '');
     const fileRecord = activeFiles.get(fileId);
 
     if (!fileRecord || !fs.existsSync(fileRecord.path)) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'File not found or expired' }));
+      return;
+    }
+
+    // Security check: verify path is strictly inside UPLOAD_DIR
+    const resolvedPath = path.resolve(fileRecord.path);
+    if (!resolvedPath.startsWith(UPLOAD_DIR)) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Access denied' }));
       return;
     }
 
@@ -50,20 +60,21 @@ const server = http.createServer(async (req, res) => {
       'Content-Disposition': `attachment; filename="${encodeURIComponent(fileRecord.name)}"`,
     });
 
-    const readStream = fs.createReadStream(fileRecord.path);
+    const readStream = fs.createReadStream(resolvedPath);
     readStream.pipe(res);
     return;
   }
 
-  // API 2: Binary File Upload endpoint
+  // API 2: Binary File Upload endpoint with sanitization
   if (url.pathname === '/api/upload' && req.method === 'POST') {
-    const fileName = decodeURIComponent(req.headers['x-file-name'] || `file_${Date.now()}`);
+    const rawFileName = decodeURIComponent(req.headers['x-file-name'] || `file_${Date.now()}`);
+    const cleanFileName = path.basename(rawFileName).replace(/[^a-zA-Z0-9._-]/g, '_');
     const fileType = req.headers['x-file-type'] || 'application/octet-stream';
-    const senderName = decodeURIComponent(req.headers['x-sender-name'] || 'Connected Device');
-    const senderPlatform = req.headers['x-sender-platform'] || 'mobile';
+    const senderName = decodeURIComponent(req.headers['x-sender-name'] || 'Connected Device').slice(0, 50);
+    const senderPlatform = (req.headers['x-sender-platform'] || 'mobile').slice(0, 20);
 
     const fileId = `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-    const filePath = path.join(UPLOAD_DIR, `${fileId}_${path.basename(fileName)}`);
+    const filePath = path.join(UPLOAD_DIR, `${fileId}_${cleanFileName}`);
 
     const writeStream = fs.createWriteStream(filePath);
     let totalSize = 0;
@@ -78,7 +89,7 @@ const server = http.createServer(async (req, res) => {
 
       const fileRecord = {
         id: fileId,
-        name: fileName,
+        name: rawFileName,
         size: totalSize,
         type: fileType,
         path: filePath,
@@ -130,7 +141,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // Static files fallback (Serve Vite dist if built, otherwise simple status)
+  // Static files fallback (Serve Vite dist if built)
   const distPath = path.join(__dirname, 'dist');
   if (fs.existsSync(distPath)) {
     let filePath = path.join(distPath, url.pathname === '/' ? 'index.html' : url.pathname);
@@ -146,7 +157,9 @@ const server = http.createServer(async (req, res) => {
       '.svg': 'image/svg+xml',
       '.json': 'application/json',
       '.png': 'image/png',
+      '.jpg': 'image/jpeg',
       '.ico': 'image/x-icon',
+      '.apk': 'application/vnd.android.package-archive',
     };
 
     const contentType = mimeTypes[ext] || 'application/octet-stream';
@@ -166,7 +179,7 @@ const server = http.createServer(async (req, res) => {
   res.end(JSON.stringify({ status: 'Hop LAN Server Active', port: PORT }));
 });
 
-// WebSocket Server for Real-Time LAN Presence & Sync
+// WebSocket Server for Real-Time Presence & Sync
 const wss = new WebSocketServer({ server });
 
 wss.on('connection', (ws) => {
@@ -183,7 +196,6 @@ wss.on('connection', (ws) => {
         clipboardHistory.unshift(data.item);
         if (clipboardHistory.length > 50) clipboardHistory.pop();
 
-        // Broadcast to all clients
         const broadcastMsg = JSON.stringify({
           type: 'CLIPBOARD_SYNC',
           item: data.item,
@@ -196,7 +208,7 @@ wss.on('connection', (ws) => {
         });
       }
     } catch {
-      // ignore parsing error
+      // ignore
     }
   });
 
@@ -217,5 +229,5 @@ function broadcastPeersList() {
 }
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`⚡ Hop LAN Server is running at http://0.0.0.0:${PORT}`);
+  console.log(`⚡ Hop Secure LAN Server is running at http://0.0.0.0:${PORT}`);
 });

@@ -1,0 +1,82 @@
+Device:
+
+Device Info:
+MANUFACTURER:Nothing DEVICE:Pong MODEL:AIN065 BRAND:Nothing BOARD:taro HARDWARE:qcom SDK_INT:35
+
+Device Interface:
+oriole
+
+HDR+ Model:
+--
+
+Shot Mode:
+--
+
+Device ID:
+--
+
+Camera ID:
+0
+
+Sensor ID:
+0
+
+Merge Method:
+0 (wiener filter)(0)
+
+allowSabre:
+false
+
+allowSpatialRgb:
+false
+
+shastaEnabled:
+false
+
+shastaForced:
+false
+
+Google Camera Logic:
+AUTO(0)
+
+FrameCount:
+--
+
+Expastro:
+--
+
+Stream OpMode:
+AUTO(0)
+
+Stream Session:
+0. Auto(0)
+
+Image Reader Format:
+AUTO(0)
+
+ExposureTimeMs:
+--
+
+AstroExposureTimeMs:
+--
+
+IsoTime:
+--
+
+HardwareLevel:
+null
+
+Preview:
+UNKNOWN(0)
+
+C2ALevel3:
+false
+
+Leica:
+false
+
+DCI-P3:
+false
+
+FocusDistance:
+3.4028235E38

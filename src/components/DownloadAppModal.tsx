@@ -7,23 +7,32 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   localIp: string;
+  deferredInstallPrompt?: any;
 }
 
-export const DownloadAppModal: React.FC<Props> = ({ isOpen, onClose, localIp }) => {
+export const DownloadAppModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  localIp,
+  deferredInstallPrompt,
+}) => {
   const [activeTab, setActiveTab] = useState<'android' | 'ios' | 'pc'>('android');
-  const [downloading, setDownloading] = useState(false);
+  const [installed, setInstalled] = useState(false);
 
   if (!isOpen) return null;
 
   const mobileUrl = `http://${localIp || '192.168.1.102'}:5180/?view=mobile`;
 
-  const handleDownloadApk = () => {
-    setDownloading(true);
-    const a = document.createElement('a');
-    a.href = '/hop-v1.0.apk';
-    a.download = 'hop-v1.0.apk';
-    a.click();
-    setTimeout(() => setDownloading(false), 2000);
+  const handleInstallApp = async () => {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setInstalled(true);
+      }
+    } else {
+      alert('To install on Android:\n1. Open http://' + (localIp || '192.168.1.102') + ':5180 on your phone\n2. Tap the Chrome menu (⋮) -> Install app or Add to Home Screen.');
+    }
   };
 
   return (
@@ -42,9 +51,9 @@ export const DownloadAppModal: React.FC<Props> = ({ isOpen, onClose, localIp }) 
             </div>
             <div>
               <h3 className="font-semibold text-sm text-white font-sans">
-                Download Hop Apps
+                Install Hop Application
               </h3>
-              <p className="text-[11px] text-zinc-400 font-mono">Android APK &bull; iOS App &bull; PC Web</p>
+              <p className="text-[11px] text-zinc-400 font-mono">Android App &bull; iOS App &bull; PC Web Studio</p>
             </div>
           </div>
           <button
@@ -64,7 +73,7 @@ export const DownloadAppModal: React.FC<Props> = ({ isOpen, onClose, localIp }) 
             }`}
           >
             <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Android (APK)</span>
+            <span>Android</span>
           </button>
 
           <button
@@ -74,7 +83,7 @@ export const DownloadAppModal: React.FC<Props> = ({ isOpen, onClose, localIp }) 
             }`}
           >
             <Apple className="w-3.5 h-3.5 text-zinc-200" />
-            <span>iOS (iPhone / iPad)</span>
+            <span>iOS (iPhone)</span>
           </button>
 
           <button
@@ -84,11 +93,11 @@ export const DownloadAppModal: React.FC<Props> = ({ isOpen, onClose, localIp }) 
             }`}
           >
             <Monitor className="w-3.5 h-3.5 text-sky-400" />
-            <span>PC & Mac Website</span>
+            <span>PC & Mac</span>
           </button>
         </div>
 
-        {/* TAB 1: ANDROID APK */}
+        {/* TAB 1: ANDROID APP */}
         {activeTab === 'android' && (
           <div className="space-y-4">
             <div className="p-4 rounded-2xl bg-black/40 border border-white/[0.08] flex flex-col sm:flex-row items-center gap-4">
@@ -96,29 +105,29 @@ export const DownloadAppModal: React.FC<Props> = ({ isOpen, onClose, localIp }) 
                 <QRCodeSVG value={mobileUrl} size={110} level="H" />
               </div>
               <div className="space-y-2 text-center sm:text-left flex-1">
-                <div className="font-semibold text-white text-xs">Scan or Download APK Directly</div>
+                <div className="font-semibold text-white text-xs">1-Tap Android Native Installation</div>
                 <p className="text-[11px] text-zinc-400">
-                  Direct installation for Android devices (Samsung, Pixel, Xiaomi, OnePlus, Motorola).
+                  Installs directly into your Android app drawer with full camera roll, clipboard, and Wi-Fi capabilities.
                 </p>
                 <button
-                  onClick={handleDownloadApk}
+                  onClick={handleInstallApp}
                   className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-sans font-bold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-[0.98] transition-all"
                 >
                   <Download className="w-4 h-4" />
-                  <span>{downloading ? 'Downloading APK...' : 'Download Hop APK (v1.0)'}</span>
+                  <span>{installed ? 'App Installed!' : 'Install Hop on Android'}</span>
                 </button>
               </div>
             </div>
 
             <div className="space-y-1.5 text-xs text-zinc-300 font-sans bg-black/30 p-3 rounded-2xl border border-white/[0.06]">
-              <div className="font-semibold text-zinc-200 text-[11px]">Installation Steps:</div>
+              <div className="font-semibold text-zinc-200 text-[11px]">How it works on Android:</div>
               <div className="flex items-center gap-2 text-[11px] text-zinc-400">
-                <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-white text-[10px]">1</span>
-                <span>Download the <strong>hop-v1.0.apk</strong> on your phone.</span>
+                <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-[10px]">✓</span>
+                <span>Open <strong>http://{localIp || '192.168.1.102'}:5180</strong> in Chrome on your phone.</span>
               </div>
               <div className="flex items-center gap-2 text-[11px] text-zinc-400">
-                <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-white text-[10px]">2</span>
-                <span>Tap notification &rarr; Select <strong>Install</strong> (enable "Install unknown apps" if prompted).</span>
+                <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-[10px]">✓</span>
+                <span>Tap <strong>"Install App"</strong> in the banner &rarr; Android automatically packages and places Hop on your Home Screen!</span>
               </div>
             </div>
           </div>
