@@ -10,7 +10,11 @@
     "preview": "vite preview",
     "cap:sync": "cap sync",
     "cap:android": "cap add android && cap sync",
-    "cap:ios": "cap add ios && cap sync"
+    "cap:ios": "cap add ios && cap sync",
+    "electron:dev": "vite & electron .",
+    "electron:build:win": "npm run build && electron-builder --win --x64",
+    "electron:build:mac": "npm run build && electron-builder --mac",
+    "electron:build:linux": "npm run build && electron-builder --linux AppImage"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.1",
@@ -38,5 +42,36 @@
     "typescript": "^5.7.3",
     "vite": "^5.4.14"
   },
-  "description": "Universal Cross-Platform P2P LAN Drop & Real-Time Shared Clipboard Studio"
+  "description": "Universal Cross-Platform P2P LAN Drop & Real-Time Shared Clipboard Studio",
+  "main": "electron/main.cjs",
+  "build": {
+    "appId": "com.saqdil.hop",
+    "productName": "Hop",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "public/favicon.svg"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.utilities"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    }
+  }
 }
