@@ -59,22 +59,22 @@ export const TransferQueue: React.FC<Props> = ({
   };
 
   return (
-    <div className="space-y-4 font-sans">
+    <div className="space-y-3 font-mono">
       {/* Header */}
-      <div className="rounded-2xl bg-[#121214] border border-white/[0.08] p-5 flex items-center justify-between">
+      <div className="bg-[#0c0c0e] border border-white/10 p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-200">
-            <ArrowUpDown className="w-4 h-4" />
+          <div className="w-7 h-7 bg-black border border-white/10 flex items-center justify-center text-white">
+            <ArrowUpDown className="w-3.5 h-3.5" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
               Transfer Activity
-              <span className="text-[11px] font-mono px-2 py-0.2 rounded-md bg-zinc-900 text-zinc-400 border border-white/[0.06]">
+              <span className="text-[10px] px-1.5 py-0.2 bg-black border border-white/10 text-zinc-400">
                 {transfers.length}
               </span>
             </h2>
-            <p className="text-xs text-zinc-400">
-              Encrypted direct peer-to-peer streaming
+            <p className="text-[10px] text-zinc-500 uppercase">
+              Direct P2P Encrypted Stream
             </p>
           </div>
         </div>
@@ -82,20 +82,19 @@ export const TransferQueue: React.FC<Props> = ({
         {transfers.length > 0 && (
           <button
             onClick={onClearHistory}
-            className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs transition-colors border border-white/[0.06]"
+            className="px-2.5 py-1 bg-black hover:bg-zinc-900 text-zinc-300 text-[10px] uppercase tracking-wider transition-colors border border-white/10"
           >
-            Clear History
+            Clear
           </button>
         )}
       </div>
 
       {/* Transfer Sessions List */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         {transfers.length === 0 ? (
-          <div className="rounded-2xl bg-[#121214] border border-white/[0.08] p-10 text-center space-y-2">
-            <ArrowUpDown className="w-6 h-6 text-zinc-600 mx-auto" />
-            <h3 className="text-sm font-semibold text-white">No Active Transfers</h3>
-            <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+          <div className="bg-[#0c0c0e] border border-white/10 p-8 text-center space-y-1">
+            <h3 className="text-xs font-bold text-white uppercase tracking-wider">No Active Transfers</h3>
+            <p className="text-[11px] text-zinc-500">
               Select a device and drop files to start an instant transfer.
             </p>
           </div>
@@ -108,32 +107,32 @@ export const TransferQueue: React.FC<Props> = ({
               return (
                 <motion.div
                   key={session.id}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
-                  className="rounded-2xl bg-[#121214] border border-white/[0.08] p-4 space-y-3 font-mono text-xs"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="bg-[#0c0c0e] border border-white/10 p-3.5 space-y-2.5 text-xs"
                 >
                   {/* Top: Devices & Status */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-zinc-300">
-                      <span className="text-white font-medium flex items-center gap-1.5">
-                        <Laptop className="w-3.5 h-3.5 text-zinc-400" />
+                      <span className="text-white font-bold flex items-center gap-1 uppercase text-[11px]">
+                        <Laptop className="w-3 h-3 text-zinc-400" />
                         {session.sender.name}
                       </span>
                       <span className="text-zinc-600">&rarr;</span>
-                      <span className="text-white font-medium flex items-center gap-1.5">
-                        <Smartphone className="w-3.5 h-3.5 text-zinc-400" />
+                      <span className="text-white font-bold flex items-center gap-1 uppercase text-[11px]">
+                        <Smartphone className="w-3 h-3 text-zinc-400" />
                         {session.receiver.name}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2">
                       {isCompleted ? (
-                        <span className="px-2 py-0.5 rounded-md bg-zinc-900 text-emerald-400 border border-white/10 font-bold text-[11px] flex items-center gap-1">
+                        <span className="px-1.5 py-0.5 bg-black text-white border border-white/20 font-bold text-[10px] uppercase flex items-center gap-1">
                           <Check className="w-3 h-3" /> Completed
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-md bg-zinc-900 text-zinc-200 border border-white/10 font-medium text-[11px]">
+                        <span className="px-1.5 py-0.5 bg-black text-white border border-white/20 font-bold text-[10px]">
                           {session.speedMBs} MB/s
                         </span>
                       )}
@@ -141,21 +140,21 @@ export const TransferQueue: React.FC<Props> = ({
                   </div>
 
                   {/* Files List */}
-                  <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-white/[0.06]">
+                  <div className="space-y-1 bg-black p-2 border border-white/10">
                     {session.files.map((file) => (
                       <div key={file.id} className="flex items-center justify-between text-zinc-300">
                         <div className="flex items-center gap-2 truncate mr-2">
-                          <FileText className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                          <span className="truncate">{file.name}</span>
+                          <FileText className="w-3 h-3 text-zinc-400 shrink-0" />
+                          <span className="truncate text-[11px]">{file.name}</span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-zinc-500 text-[11px]">{formatBytes(file.size)}</span>
+                          <span className="text-zinc-500 text-[10px]">{formatBytes(file.size)}</span>
                           {isCompleted && (
                             <div className="flex items-center gap-1">
                               {onPreviewFile && (
                                 <button
                                   onClick={() => onPreviewFile(file)}
-                                  className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
+                                  className="p-1 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-zinc-300 transition-colors"
                                   title="Preview"
                                 >
                                   <Eye className="w-3 h-3" />
@@ -163,7 +162,7 @@ export const TransferQueue: React.FC<Props> = ({
                               )}
                               <button
                                 onClick={() => handleDownloadFile(file)}
-                                className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-white transition-colors"
+                                className="p-1 bg-white text-black hover:bg-zinc-200 transition-colors font-bold"
                                 title="Download"
                               >
                                 <Download className="w-3 h-3" />
@@ -176,15 +175,15 @@ export const TransferQueue: React.FC<Props> = ({
                   </div>
 
                   {/* Progress Bar & Calculated ETA */}
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between text-[11px] text-zinc-400">
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px] text-zinc-400">
                       <span>
                         {formatBytes(session.transferredBytes)} of {formatBytes(session.totalBytes)} ({session.progressPercent}%)
                       </span>
                       <span>{formatETA(session)}</span>
                     </div>
 
-                    <div className="w-full h-1.5 rounded-full bg-zinc-900 border border-white/[0.06] overflow-hidden">
+                    <div className="w-full h-1 bg-black border border-white/10 overflow-hidden">
                       <motion.div
                         className="h-full bg-white transition-all duration-150"
                         style={{ width: `${session.progressPercent}%` }}
@@ -194,28 +193,28 @@ export const TransferQueue: React.FC<Props> = ({
 
                   {/* Controls */}
                   {!isCompleted && (
-                    <div className="flex justify-end gap-2 pt-1">
+                    <div className="flex justify-end gap-1.5 pt-1">
                       {isTransferring ? (
                         <button
                           onClick={() => onPause(session.id)}
-                          className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 transition-colors flex items-center gap-1 border border-white/[0.06]"
+                          className="px-2 py-0.5 bg-black hover:bg-zinc-900 text-zinc-300 transition-colors flex items-center gap-1 border border-white/10 text-[10px] uppercase"
                         >
-                          <Pause className="w-3 h-3" /> Pause
+                          <Pause className="w-2.5 h-2.5" /> Pause
                         </button>
                       ) : (
                         <button
                           onClick={() => onResume(session.id)}
-                          className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 transition-colors flex items-center gap-1 border border-white/[0.06]"
+                          className="px-2 py-0.5 bg-black hover:bg-zinc-900 text-zinc-300 transition-colors flex items-center gap-1 border border-white/10 text-[10px] uppercase"
                         >
-                          <Play className="w-3 h-3" /> Resume
+                          <Play className="w-2.5 h-2.5" /> Resume
                         </button>
                       )}
 
                       <button
                         onClick={() => onCancel(session.id)}
-                        className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-rose-400 transition-colors flex items-center gap-1 border border-white/[0.06]"
+                        className="px-2 py-0.5 bg-black hover:bg-zinc-900 text-zinc-300 transition-colors flex items-center gap-1 border border-white/10 text-[10px] uppercase"
                       >
-                        <X className="w-3 h-3" /> Cancel
+                        <X className="w-2.5 h-2.5" /> Cancel
                       </button>
                     </div>
                   )}

@@ -1,5 +1,5 @@
 ﻿import React, { useState } from 'react';
-import { X, Wifi, Radio, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
+import { X, ArrowRight, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Props {
@@ -16,102 +16,86 @@ export const HotspotDirectModal: React.FC<Props> = ({ isOpen, onClose, onEnterRo
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md font-mono">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-lg rounded-3xl apple-card border border-white/15 p-6 shadow-2xl space-y-5"
+        exit={{ opacity: 0, scale: 0.98 }}
+        className="w-full max-w-md bg-[#0c0c0e] border border-white/15 p-6 space-y-4 shadow-2xl rounded-none"
       >
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-gradient-to-b from-sky-400 to-blue-600 shadow-sm text-white">
-              <Zap className="w-5 h-5 fill-white" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-sm text-white font-sans">
-                Direct P2P & Hotspot Transfer
-              </h3>
-              <p className="text-[11px] text-zinc-400 font-mono">No same Wi-Fi required</p>
-            </div>
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div>
+            <h3 className="font-bold text-xs uppercase tracking-widest text-white">
+              Direct P2P & Hotspot
+            </h3>
+            <p className="text-[10px] text-zinc-400">Zero Internet / Offline Transport</p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+            className="p-1 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Mode Selector */}
-        <div className="flex items-center p-1 rounded-xl apple-segmented font-mono text-xs">
+        <div className="flex items-center border border-white/10 bg-black">
           <button
             onClick={() => setActiveMode('hotspot')}
-            className={`flex-1 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-1.5 ${
-              activeMode === 'hotspot' ? 'bg-white/15 text-white font-semibold' : 'text-zinc-400'
+            className={`flex-1 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-colors border-r border-white/10 ${
+              activeMode === 'hotspot' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white'
             }`}
           >
-            <Wifi className="w-3.5 h-3.5" />
-            <span>Wi-Fi Hotspot (Offline)</span>
+            Offline Hotspot
           </button>
 
           <button
             onClick={() => setActiveMode('webrtc')}
-            className={`flex-1 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-1.5 ${
-              activeMode === 'webrtc' ? 'bg-white/15 text-white font-semibold' : 'text-zinc-400'
+            className={`flex-1 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-colors ${
+              activeMode === 'webrtc' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white'
             }`}
           >
-            <Radio className="w-3.5 h-3.5" />
-            <span>WebRTC (5G / Any Wi-Fi)</span>
+            Room PIN
           </button>
         </div>
 
-        {/* MODE 1: OFFLINE MOBILE HOTSPOT GUIDE */}
+        {/* HOTSPOT GUIDE */}
         {activeMode === 'hotspot' && (
-          <div className="space-y-3 font-sans text-xs">
-            <div className="p-3.5 rounded-2xl bg-black/40 border border-white/[0.08] space-y-2">
-              <div className="flex items-center gap-2 font-semibold text-white">
-                <span className="w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 flex items-center justify-center font-mono">1</span>
-                <span>Turn on Portable Hotspot on Phone</span>
-              </div>
-              <p className="text-zinc-400 pl-7 text-[11px]">
-                On Android: Settings &rarr; Network &rarr; Hotspot. On iPhone: Settings &rarr; Personal Hotspot.
+          <div className="space-y-2 text-xs">
+            <div className="p-3 bg-black border border-white/10 space-y-1">
+              <div className="font-bold text-white uppercase text-[11px]">1. Enable Portable Hotspot</div>
+              <p className="text-zinc-400 text-[10px]">
+                Turn on Hotspot on your Android or iPhone Settings.
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-black/40 border border-white/[0.08] space-y-2">
-              <div className="flex items-center gap-2 font-semibold text-white">
-                <span className="w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 flex items-center justify-center font-mono">2</span>
-                <span>Connect your other Phone or Mac to the Hotspot</span>
-              </div>
-              <p className="text-zinc-400 pl-7 text-[11px]">
-                Join the hotspot Wi-Fi. 0 cellular data is consumed during direct local file transfers!
+            <div className="p-3 bg-black border border-white/10 space-y-1">
+              <div className="font-bold text-white uppercase text-[11px]">2. Connect Other Device</div>
+              <p className="text-zinc-400 text-[10px]">
+                Join the hotspot Wi-Fi. 0 cellular data is consumed during local file transfers!
               </p>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-black/40 border border-white/[0.08] space-y-2">
-              <div className="flex items-center gap-2 font-semibold text-white">
-                <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-mono">3</span>
-                <span>Open Hop &rarr; Instant 100+ MB/s Drop</span>
-              </div>
-              <p className="text-zinc-400 pl-7 text-[11px]">
-                Hop detects the direct link and transfers at full Wi-Fi line speed.
+            <div className="p-3 bg-black border border-white/10 space-y-1">
+              <div className="font-bold text-white uppercase text-[11px]">3. Open Hop</div>
+              <p className="text-zinc-400 text-[10px]">
+                Hop streams files at full local hardware speed (100+ MB/s).
               </p>
             </div>
           </div>
         )}
 
-        {/* MODE 2: WEBRTC DIRECT ROOM CODE (5G / Separate Networks) */}
+        {/* WEBRTC PIN */}
         {activeMode === 'webrtc' && (
-          <div className="space-y-4">
-            <div className="apple-card rounded-2xl p-4 text-center space-y-2">
-              <span className="text-xs text-zinc-400 font-mono block">Your Direct P2P Room Code</span>
-              <div className="text-3xl font-mono font-bold text-white tracking-widest bg-black/40 py-2.5 rounded-xl border border-white/10">
+          <div className="space-y-3">
+            <div className="p-4 bg-black border border-white/10 text-center space-y-1">
+              <span className="text-[10px] text-zinc-500 uppercase tracking-widest block">Direct Room PIN</span>
+              <div className="text-2xl font-bold text-white tracking-widest py-1">
                 {generatedCode}
               </div>
-              <span className="text-[11px] text-zinc-400 block">
-                Enter this code on any device connected to 5G, 4G, or any Wi-Fi to establish a direct P2P link.
+              <span className="text-[10px] text-zinc-400 block">
+                Enter this code on any device on 5G, 4G, or Wi-Fi.
               </span>
             </div>
 
@@ -123,30 +107,33 @@ export const HotspotDirectModal: React.FC<Props> = ({ isOpen, onClose, onEnterRo
                   onClose();
                 }
               }}
-              className="flex gap-2 font-mono text-xs"
+              className="flex gap-1.5"
             >
               <input
                 type="text"
                 value={roomInput}
                 onChange={(e) => setRoomInput(e.target.value)}
-                placeholder="Enter 6-digit room code..."
-                className="flex-1 px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-sky-400"
+                placeholder="Enter 6-digit PIN..."
+                className="flex-1 px-3 py-2 bg-black border border-white/15 text-white placeholder-zinc-600 focus:outline-none focus:border-white text-xs rounded-none"
               />
               <button
                 type="submit"
                 disabled={!roomInput.trim()}
-                className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-950 font-semibold font-sans flex items-center gap-1.5 shadow-md disabled:opacity-40"
+                className="px-4 py-2 bg-white text-black font-bold text-xs uppercase flex items-center gap-1 hover:bg-zinc-200 disabled:opacity-30 rounded-none"
               >
                 <span>Connect</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3 h-3" />
               </button>
             </form>
           </div>
         )}
 
-        <div className="flex items-center justify-center gap-2 text-[11px] font-mono text-zinc-400">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span>Encrypted Direct P2P &bull; Zero Server Storage</span>
+        <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-2 border-t border-white/10">
+          <div className="flex items-center gap-1">
+            <ShieldCheck className="w-3 h-3 text-zinc-400" />
+            <span className="uppercase">Direct P2P Encrypted</span>
+          </div>
+          <span>v1.0</span>
         </div>
       </motion.div>
     </div>

@@ -1,7 +1,6 @@
-﻿import React from 'react';
+import React from 'react';
 import { PeerDevice } from '../types/peer';
 import { Radio, QrCode, Clipboard, ArrowUpDown, Download } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 export type AppView = 'radar' | 'clipboard' | 'transfers';
 
@@ -27,27 +26,24 @@ export const Navbar: React.FC<Props> = ({
   clipboardItemsCount,
 }) => {
   const views = [
-    { id: 'radar' as AppView, label: 'Drop', icon: Radio },
-    { id: 'clipboard' as AppView, label: 'Clipboard', icon: Clipboard, badge: clipboardItemsCount },
-    { id: 'transfers' as AppView, label: 'Transfers', icon: ArrowUpDown, badge: activeTransfersCount },
+    { id: 'radar' as AppView, label: 'DROP', icon: Radio },
+    { id: 'clipboard' as AppView, label: 'CLIPBOARD', icon: Clipboard, badge: clipboardItemsCount },
+    { id: 'transfers' as AppView, label: 'TRANSFERS', icon: ArrowUpDown, badge: activeTransfersCount },
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-white/[0.08] bg-[#09090b]/80 backdrop-blur-2xl">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-        {/* Brand & Clean Segmented Control */}
-        <div className="flex items-center gap-5">
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-md bg-white text-zinc-950 flex items-center justify-center font-bold text-xs font-mono tracking-tighter">
-              H
-            </div>
-            <span className="font-semibold text-sm tracking-tight text-white font-sans">
-              Hop
+    <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-[#050507]/90 backdrop-blur-md">
+      <div className="max-w-5xl mx-auto px-4 h-13 flex items-center justify-between">
+        {/* Brand & Tabs */}
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <span className="font-mono font-bold text-sm tracking-widest text-white uppercase">
+              HOP<span className="text-zinc-500">_</span>
             </span>
           </div>
 
-          {/* Segmented Control */}
-          <div className="flex items-center p-0.5 rounded-lg bg-zinc-900 border border-white/[0.08]">
+          {/* Minimal Tabs */}
+          <div className="flex items-center border border-white/10 bg-black">
             {views.map((v) => {
               const Icon = v.icon;
               const isActive = currentView === v.id;
@@ -55,21 +51,14 @@ export const Navbar: React.FC<Props> = ({
                 <button
                   key={v.id}
                   onClick={() => onChangeView(v.id)}
-                  className={`relative px-3 py-1 text-xs rounded-md transition-colors font-medium flex items-center gap-1.5 ${
-                    isActive ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'
+                  className={`relative px-3.5 py-1.5 text-[11px] font-mono tracking-wider transition-colors flex items-center gap-1.5 border-r last:border-r-0 border-white/10 ${
+                    isActive ? 'bg-white text-black font-bold' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
                   }`}
                 >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeNavTab"
-                      className="absolute inset-0 bg-zinc-800 rounded-md border border-white/10 shadow-sm -z-10"
-                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                    />
-                  )}
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className="w-3 h-3" />
                   <span>{v.label}</span>
                   {typeof v.badge === 'number' && v.badge > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/15 text-white font-mono font-medium">
+                    <span className={`px-1 text-[9px] font-mono ${isActive ? 'bg-black text-white' : 'bg-white/15 text-zinc-300'}`}>
                       {v.badge}
                     </span>
                   )}
@@ -80,37 +69,37 @@ export const Navbar: React.FC<Props> = ({
         </div>
 
         {/* Right Controls */}
-        <div className="flex items-center gap-2 text-xs">
-          {/* Direct P2P Hotspot */}
+        <div className="flex items-center gap-2 text-xs font-mono">
+          {/* Direct Mode */}
           <button
             onClick={onOpenHotspotModal}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-white/[0.08] transition-colors"
+            className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 bg-black hover:bg-zinc-900 text-zinc-300 border border-white/10 text-[11px] uppercase tracking-wider transition-colors"
           >
-            <span>Direct Mode</span>
+            <span>Direct</span>
           </button>
 
-          {/* Download App */}
+          {/* Get App */}
           <button
             onClick={onOpenDownloadModal}
-            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-white/[0.08] transition-colors"
+            className="hidden md:flex items-center gap-1 px-2.5 py-1.5 bg-black hover:bg-zinc-900 text-zinc-300 border border-white/10 text-[11px] uppercase tracking-wider transition-colors"
           >
-            <Download className="w-3.5 h-3.5 text-zinc-400" />
-            <span>Get App</span>
+            <Download className="w-3 h-3 text-zinc-400" />
+            <span>Install</span>
           </button>
 
-          {/* Current Device Pill */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900/60 border border-white/[0.06] text-zinc-400 text-[11px] font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span className="truncate max-w-[130px] text-zinc-200">{selfDevice.name}</span>
+          {/* Current Device Tag */}
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 bg-black border border-white/10 text-zinc-400 text-[11px]">
+            <span className="w-1.5 h-1.5 bg-white" />
+            <span className="truncate max-w-[120px] text-zinc-200 uppercase">{selfDevice.name}</span>
           </div>
 
           {/* Pair Phone Button */}
           <button
             onClick={onOpenQrPairing}
-            className="px-3.5 py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 font-semibold text-xs flex items-center gap-1.5 transition-all shadow-sm active:scale-[0.98]"
+            className="px-3.5 py-1.5 bg-white hover:bg-zinc-200 text-black font-mono font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-colors"
           >
             <QrCode className="w-3.5 h-3.5" />
-            <span>Pair Device</span>
+            <span>Pair</span>
           </button>
         </div>
       </div>
