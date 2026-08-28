@@ -1,11 +1,9 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PeerDevice } from './types/peer';
 import { FileItem, TransferSession, ClipboardItem } from './types/transfer';
-import { getOrCreateSelfDevice, getInitialPeers } from './engine/discoveryBeacon';
+import { getRealDevice, saveCustomDeviceName } from './engine/deviceDetector';
 import { loadClipboardVault, saveClipboardVault, createClipboardItem } from './engine/clipboardEngine';
-import { p2pManager } from './engine/p2pEngine';
-import { lanSync } from './engine/lanSync';
-import { webrtcManager } from './engine/webrtcEngine';
+import { PeerEngine } from './engine/peerEngine';
 import { Navbar, AppView } from './components/Navbar';
 import { RadarView } from './components/RadarView';
 import { FileDropZone } from './components/FileDropZone';
@@ -22,9 +20,11 @@ import confetti from 'canvas-confetti';
 const STORAGE_KEY_TRUSTED = 'hop_trusted_devices';
 
 export const App: React.FC = () => {
-  const [selfDevice] = useState<PeerDevice>(() => getOrCreateSelfDevice());
+  const [selfDevice, setSelfDevice] = useState<PeerDevice>(() => getRealDevice());
   const [peers, setPeers] = useState<PeerDevice[]>([]);
   const [selectedPeer, setSelectedPeer] = useState<PeerDevice | null>(null);
+  const [roomPin, setRoomPin] = useState<string>('');
+
   const [trustedDevices, setTrustedDevices] = useState<string[]>(() => {
     try {
       return JSON.parse(localStorage.getItem(STORAGE_KEY_TRUSTED) || '[]');
@@ -56,37 +56,57 @@ export const App: React.FC = () => {
   const [pendingSecurityRequest, setPendingSecurityRequest] = useState<SecurityRequest | null>(null);
   const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
 
+  const peerEngineRef = useRef<PeerEngine | null>(null);
+
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
 
-    // Capture Android Chrome WebAPK install prompt
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
       setDeferredInstallPrompt(e);
     };
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
-    const initial = getInitialPeers(selfDevice.id);
-    setPeers(initial);
-    if (initial.length > 0) {
-      setSelectedPeer(initial[0]);
-    }
+    // Initialize PeerEngine
+    const engine = new PeerEngine(selfDevice);
+    peerEngineRef.current = engine;
 
-    // Initialize LAN Sync WebSocket Bridge
-    lanSync.init(selfDevice);
+    const urlParams = new URLSearchParams(window.location.search);
+    const joinTarget = urlParams.get('join');
 
-    const unsubPeers = lanSync.onPeers((lanPeers) => {
-      if (lanPeers && lanPeers.length > 0) {
-        const others = lanPeers.filter((p) => p.id !== selfDevice.id);
-        if (others.length > 0) {
-          setPeers(others);
-        }
+    engine.init().then((peerId) => {
+      const pin = peerId.split('_').pop() || '1234';
+      setRoomPin(pin);
+
+      // If user opened a ?join= link from QR scan, connect automatically!
+      if (joinTarget) {
+        engine.connectToPeer(joinTarget);
       }
     });
 
-    const unsubClip = lanSync.onClipboard((item) => {
+    // Subscriptions
+    const unsubConnect = engine.onConnect((remoteDevice) => {
+      setPeers((prev) => {
+        const filtered = prev.filter((p) => p.id !== remoteDevice.id);
+        return [...filtered, remoteDevice];
+      });
+      setSelectedPeer(remoteDevice);
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+    });
+
+    const unsubDisconnect = engine.onDisconnect((remotePeerId) => {
+      setPeers((prev) => prev.filter((p) => p.id !== remotePeerId));
+      setSelectedPeer((prev) => (prev?.id === remotePeerId ? null : prev));
+    });
+
+    const unsubFileComplete = engine.onFileComplete((_completedFile, session) => {
+      setTransfers((prev) => [session, ...prev]);
+      confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
+    });
+
+    const unsubClipboard = engine.onClipboard((item) => {
       setClipboardItems((prev) => {
         if (prev.some((i) => i.id === item.id || i.text === item.text)) return prev;
         return [item, ...prev];
@@ -101,92 +121,28 @@ export const App: React.FC = () => {
       }
     });
 
-    const unsubFile = lanSync.onFile((fileRecord) => {
-      const incomingFile: FileItem = {
-        id: fileRecord.id,
-        name: fileRecord.name,
-        size: fileRecord.size,
-        type: fileRecord.type,
-        downloadUrl: fileRecord.downloadUrl,
-        blobUrl: fileRecord.downloadUrl,
-        previewUrl: fileRecord.type?.startsWith('image/') ? fileRecord.downloadUrl : undefined,
-      };
-
-      const incomingSender: PeerDevice = {
-        id: fileRecord.sender?.name ? `dev_${fileRecord.sender.name}` : 'remote_sender',
-        name: fileRecord.sender?.name || 'Remote Device',
-        platform: fileRecord.sender?.platform || 'mobile',
-        deviceModel: 'Connected Device',
-        ip: window.location.hostname,
-        status: 'online',
-        lastSeen: Date.now(),
-        avatarSeed: 'sender',
-      };
-
-      const session: TransferSession = {
-        id: `rx_${Date.now()}`,
-        sender: incomingSender,
-        receiver: selfDevice,
-        files: [incomingFile],
-        totalBytes: fileRecord.size,
-        transferredBytes: fileRecord.size,
-        speedMBs: 94.2,
-        progressPercent: 100,
-        status: 'completed',
-        startedAt: Date.now() - 500,
-        completedAt: Date.now(),
-        etaSeconds: 0,
-      };
-
-      // Check if trusted, else trigger security connection prompt
-      const senderKey = `${incomingSender.name}_${incomingSender.ip}`;
-      if (!trustedDevices.includes(senderKey) && !trustedDevices.includes('all')) {
-        setPendingSecurityRequest({
-          id: `req_${Date.now()}`,
-          sender: incomingSender,
-          action: 'file_transfer',
-          details: `${fileRecord.name} (${Math.round(fileRecord.size / 1024)} KB)`,
-          pin: Math.floor(1000 + Math.random() * 9000).toString(),
-          timestamp: Date.now(),
-        });
-      }
-
-      setTransfers((prev) => [session, ...prev]);
-      confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
-    });
-
-    // Setup WebRTC Handlers
-    webrtcManager.onComplete((session) => {
-      setTransfers((prev) => [session, ...prev]);
-      confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
-    });
-
-    webrtcManager.onClipboard((text) => {
-      const item = createClipboardItem(text, {
-        id: 'p2p_peer',
-        name: 'Direct P2P Peer',
-        platform: 'android',
-        deviceModel: 'Phone',
-        ip: 'P2P',
-        status: 'online',
-        lastSeen: Date.now(),
-        avatarSeed: 'p2p',
-      });
-      setClipboardItems((prev) => [item, ...prev]);
-    });
-
     return () => {
-      unsubPeers();
-      unsubClip();
-      unsubFile();
+      unsubConnect();
+      unsubDisconnect();
+      unsubFileComplete();
+      unsubClipboard();
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
     };
-  }, [selfDevice, autoSyncClipboard, trustedDevices]);
+  }, [selfDevice, autoSyncClipboard]);
 
   // Save clipboard updates
   useEffect(() => {
     saveClipboardVault(clipboardItems);
   }, [clipboardItems]);
+
+  const handleUpdateDeviceName = (newName: string) => {
+    saveCustomDeviceName(newName);
+    const updated = { ...selfDevice, name: newName };
+    setSelfDevice(updated);
+    if (peerEngineRef.current) {
+      peerEngineRef.current.updateSelfDevice(updated);
+    }
+  };
 
   const handleSecurityAllow = (request: SecurityRequest, trustAlways: boolean) => {
     if (trustAlways) {
@@ -204,65 +160,114 @@ export const App: React.FC = () => {
 
   // --- ACTIONS ---
   const handleSendFiles = async (files: FileItem[]) => {
-    if (!selectedPeer) return;
+    if (!selectedPeer || !peerEngineRef.current) {
+      alert('Please select or connect a device first!');
+      return;
+    }
 
-    const session = p2pManager.createTransfer(selfDevice, selectedPeer, files);
+    const session: TransferSession = {
+      id: `tx_${Date.now()}`,
+      sender: selfDevice,
+      receiver: selectedPeer,
+      files,
+      totalBytes: files.reduce((acc, f) => acc + f.size, 0),
+      transferredBytes: 0,
+      speedMBs: 90.0,
+      progressPercent: 0,
+      status: 'transferring',
+      startedAt: Date.now(),
+      etaSeconds: 2,
+      connectionMode: 'webrtc',
+    };
+
     setTransfers((prev) => [session, ...prev]);
     setCurrentView('transfers');
 
     for (const f of files) {
       try {
-        await lanSync.uploadFile(f, selfDevice);
-        await webrtcManager.sendFileDirect(f);
-      } catch {
-        // fallback
+        await peerEngineRef.current.sendFile(selectedPeer.id, f, (percent, speed) => {
+          setTransfers((prev) =>
+            prev.map((t) =>
+              t.id === session.id
+                ? {
+                    ...t,
+                    progressPercent: percent,
+                    transferredBytes: Math.round((t.totalBytes * percent) / 100),
+                    speedMBs: speed,
+                  }
+                : t
+            )
+          );
+        });
+      } catch (err: any) {
+        console.error('File send error:', err);
       }
     }
 
-    p2pManager.startStreaming(
-      session.id,
-      (updated) => {
-        setTransfers((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-      },
-      (completed) => {
-        setTransfers((prev) => prev.map((t) => (t.id === completed.id ? completed : t)));
-        confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
-      }
+    setTransfers((prev) =>
+      prev.map((t) => (t.id === session.id ? { ...t, progressPercent: 100, status: 'completed', completedAt: Date.now() } : t))
     );
+    confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
   };
 
   const handleMobileSendFiles = async (files: FileItem[]) => {
-    const desktopPeer = peers.find((p) => p.platform === 'mac' || p.platform === 'windows') || selfDevice;
-    const session = p2pManager.createTransfer(selfDevice, desktopPeer, files);
+    const target = peers[0] || selectedPeer;
+    if (!target || !peerEngineRef.current) {
+      alert('No device connected yet! Please scan the QR code on your PC.');
+      return;
+    }
+
+    const session: TransferSession = {
+      id: `tx_m_${Date.now()}`,
+      sender: selfDevice,
+      receiver: target,
+      files,
+      totalBytes: files.reduce((acc, f) => acc + f.size, 0),
+      transferredBytes: 0,
+      speedMBs: 92.5,
+      progressPercent: 0,
+      status: 'transferring',
+      startedAt: Date.now(),
+      etaSeconds: 2,
+      connectionMode: 'webrtc',
+    };
+
     setTransfers((prev) => [session, ...prev]);
 
     for (const f of files) {
       try {
-        await lanSync.uploadFile(f, selfDevice);
-        await webrtcManager.sendFileDirect(f);
-      } catch {
-        // fallback
+        await peerEngineRef.current.sendFile(target.id, f, (percent, speed) => {
+          setTransfers((prev) =>
+            prev.map((t) =>
+              t.id === session.id
+                ? {
+                    ...t,
+                    progressPercent: percent,
+                    transferredBytes: Math.round((t.totalBytes * percent) / 100),
+                    speedMBs: speed,
+                  }
+                : t
+            )
+          );
+        });
+      } catch (err: any) {
+        console.error('Mobile send error:', err);
       }
     }
 
-    p2pManager.startStreaming(
-      session.id,
-      (updated) => {
-        setTransfers((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-      },
-      (completed) => {
-        setTransfers((prev) => prev.map((t) => (t.id === completed.id ? completed : t)));
-        confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
-      }
+    setTransfers((prev) =>
+      prev.map((t) => (t.id === session.id ? { ...t, progressPercent: 100, status: 'completed', completedAt: Date.now() } : t))
     );
+    confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
   };
 
   const handleAddClipboardItem = (text: string) => {
     const item = createClipboardItem(text, selfDevice);
     setClipboardItems((prev) => [item, ...prev]);
 
-    lanSync.broadcastClipboard(item);
-    webrtcManager.sendClipboardDirect(text);
+    if (peerEngineRef.current && selectedPeer) {
+      peerEngineRef.current.sendClipboard(selectedPeer.id, item);
+    }
 
     if (autoSyncClipboard) {
       try {
@@ -289,40 +294,13 @@ export const App: React.FC = () => {
     }
   };
 
-  const handlePauseTransfer = (id: string) => {
-    p2pManager.pauseTransfer(id);
-    setTransfers((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, status: 'paused' } : t))
-    );
-  };
-
-  const handleResumeTransfer = (id: string) => {
-    p2pManager.startStreaming(
-      id,
-      (updated) => {
-        setTransfers((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-      },
-      (completed) => {
-        setTransfers((prev) => prev.map((t) => (t.id === completed.id ? completed : t)));
-        confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
-      }
-    );
-  };
-
-  const handleCancelTransfer = (id: string) => {
-    p2pManager.cancelTransfer(id);
-    setTransfers((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, status: 'cancelled' } : t))
-    );
-  };
-
   const handleClearTransfers = () => {
     setTransfers((prev) => prev.filter((t) => t.status === 'transferring'));
   };
 
   // IF IN MOBILE VIEW MODE (iPhone / Android)
   if (isMobileMode) {
-    const targetDesktop = peers.find((p) => p.platform === 'mac' || p.platform === 'windows') || selfDevice;
+    const targetDesktop = peers[0] || selectedPeer;
     return (
       <>
         <MobileView
@@ -335,11 +313,25 @@ export const App: React.FC = () => {
           onOpenHotspotModal={() => setIsHotspotModalOpen(true)}
           onPreviewFile={(f) => setPreviewFile(f)}
           onExitMobileView={() => setIsMobileMode(false)}
+          onUpdateDeviceName={handleUpdateDeviceName}
+          onOpenQrPairing={() => setIsQrModalOpen(true)}
         />
 
         <HotspotDirectModal
           isOpen={isHotspotModalOpen}
           onClose={() => setIsHotspotModalOpen(false)}
+          onEnterRoomCode={(code) => {
+            if (peerEngineRef.current) {
+              peerEngineRef.current.connectToPeer(`hop_${code}`);
+            }
+          }}
+        />
+
+        <MobilePairModal
+          isOpen={isQrModalOpen}
+          onClose={() => setIsQrModalOpen(false)}
+          localIp={selfDevice.ip}
+          onOpenMobileSimulator={() => setIsMobileMode(true)}
         />
 
         <MediaViewerModal
@@ -383,6 +375,8 @@ export const App: React.FC = () => {
               selectedPeer={selectedPeer}
               onSelectPeer={setSelectedPeer}
               onOpenQrPairing={() => setIsQrModalOpen(true)}
+              onUpdateDeviceName={handleUpdateDeviceName}
+              roomPin={roomPin}
             />
 
             <FileDropZone
@@ -409,9 +403,9 @@ export const App: React.FC = () => {
         {currentView === 'transfers' && (
           <TransferQueue
             transfers={transfers}
-            onPause={handlePauseTransfer}
-            onResume={handleResumeTransfer}
-            onCancel={handleCancelTransfer}
+            onPause={() => {}}
+            onResume={() => {}}
+            onCancel={() => {}}
             onClearHistory={handleClearTransfers}
             onPreviewFile={(f) => setPreviewFile(f)}
           />
@@ -429,6 +423,11 @@ export const App: React.FC = () => {
       <HotspotDirectModal
         isOpen={isHotspotModalOpen}
         onClose={() => setIsHotspotModalOpen(false)}
+        onEnterRoomCode={(code) => {
+          if (peerEngineRef.current) {
+            peerEngineRef.current.connectToPeer(`hop_${code}`);
+          }
+        }}
       />
 
       <DownloadAppModal

@@ -1,12 +1,12 @@
 ﻿import React, { useState, useRef } from 'react';
 import { PeerDevice } from '../../types/peer';
 import { FileItem, ClipboardItem, TransferSession } from '../../types/transfer';
-import { Laptop, Camera, UploadCloud, Clipboard, Send, Copy, Check, Sparkles, Download, Inbox, Zap, ArrowDownToLine, RefreshCw, Eye, Radio } from 'lucide-react';
+import { Laptop, Camera, UploadCloud, Clipboard, Send, Copy, Check, Download, Inbox, Zap, ArrowDownToLine, RefreshCw, Eye, Radio, Image, Video, Music, QrCode } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Props {
   selfDevice: PeerDevice;
-  targetDesktop: PeerDevice;
+  targetDesktop: PeerDevice | null;
   clipboardItems: ClipboardItem[];
   transfers: TransferSession[];
   onSendFilesToDesktop: (files: FileItem[]) => void;
@@ -14,9 +14,12 @@ interface Props {
   onOpenHotspotModal: () => void;
   onPreviewFile: (file: FileItem) => void;
   onExitMobileView: () => void;
+  onUpdateDeviceName?: (name: string) => void;
+  onOpenQrPairing?: () => void;
 }
 
 export const MobileView: React.FC<Props> = ({
+  selfDevice,
   targetDesktop,
   clipboardItems,
   transfers,
@@ -24,13 +27,19 @@ export const MobileView: React.FC<Props> = ({
   onSendClipboardText,
   onOpenHotspotModal,
   onPreviewFile,
+  onOpenQrPairing,
 }) => {
   const [activeTab, setActiveTab] = useState<'send' | 'clipboard' | 'inbox'>('send');
   const [mobileText, setMobileText] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadPercent, setUploadPercent] = useState(0);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const formatBytes = (bytes: number) => {
     if (!bytes || bytes === 0) return '0 B';
@@ -44,7 +53,7 @@ export const MobileView: React.FC<Props> = ({
     if (!files || files.length === 0) return;
 
     setIsUploading(true);
-    setUploadPercent(20);
+    setUploadPercent(30);
 
     const fileItems: FileItem[] = Array.from(files).map((f) => ({
       id: `m_file_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -63,8 +72,8 @@ export const MobileView: React.FC<Props> = ({
       setTimeout(() => {
         setIsUploading(false);
         setUploadPercent(0);
-      }, 600);
-    }, 1000);
+      }, 500);
+    }, 800);
   };
 
   const handleSendText = (e: React.FormEvent) => {
@@ -99,6 +108,13 @@ export const MobileView: React.FC<Props> = ({
 
   return (
     <div className="min-h-screen bg-[#000000] text-[#f5f5f7] flex flex-col font-sans max-w-lg mx-auto pb-24 select-none">
+      {/* Hidden File Inputs */}
+      <input ref={fileInputRef} type="file" multiple onChange={(e) => handleFilesSelected(e.target.files)} className="hidden" />
+      <input ref={imageInputRef} type="file" multiple accept="image/*" onChange={(e) => handleFilesSelected(e.target.files)} className="hidden" />
+      <input ref={videoInputRef} type="file" multiple accept="video/*" onChange={(e) => handleFilesSelected(e.target.files)} className="hidden" />
+      <input ref={audioInputRef} type="file" multiple accept="audio/*" onChange={(e) => handleFilesSelected(e.target.files)} className="hidden" />
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={(e) => handleFilesSelected(e.target.files)} className="hidden" />
+
       {/* Top Mobile Header */}
       <header className="sticky top-0 z-40 px-4 py-3 bg-[#121214]/90 backdrop-blur-2xl border-b border-white/[0.08] flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -106,21 +122,30 @@ export const MobileView: React.FC<Props> = ({
             <Zap className="w-4 h-4 fill-white" />
           </div>
           <div>
-            <h1 className="text-sm font-bold text-white font-sans tracking-tight">Hop Mobile</h1>
+            <h1 className="text-sm font-bold text-white font-sans tracking-tight">{selfDevice.name}</h1>
             <div className="text-[10px] font-mono text-zinc-400 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Target: {targetDesktop.name}</span>
+              <span>{targetDesktop ? `Connected: ${targetDesktop.name}` : 'P2P Online'}</span>
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          {onOpenQrPairing && (
+            <button
+              onClick={onOpenQrPairing}
+              className="p-1.5 rounded-xl bg-white/[0.08] text-sky-300 hover:text-white transition-colors"
+            >
+              <QrCode className="w-4 h-4" />
+            </button>
+          )}
+
           <button
             onClick={onOpenHotspotModal}
             className="px-2.5 py-1 rounded-xl bg-white/[0.08] text-sky-400 text-xs font-mono flex items-center gap-1 border border-white/10"
           >
             <Radio className="w-3 h-3 animate-pulse" />
-            <span>P2P Mode</span>
+            <span>P2P</span>
           </button>
 
           <button
@@ -139,7 +164,7 @@ export const MobileView: React.FC<Props> = ({
           <div className="flex items-center gap-2">
             <span className="text-base">📱</span>
             <span className="text-zinc-200 text-[11px]">
-              Tap <strong>Share &rarr; Add to Home Screen</strong> to use Hop as a native app!
+              Tap <strong>Share &rarr; Add to Home Screen</strong> to install Hop as an App!
             </span>
           </div>
         </div>
@@ -147,14 +172,6 @@ export const MobileView: React.FC<Props> = ({
         {/* TAB 1: SEND PHOTOS & FILES */}
         {activeTab === 'send' && (
           <div className="space-y-4">
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              onChange={(e) => handleFilesSelected(e.target.files)}
-              className="hidden"
-            />
-
             {/* Big Tap Card */}
             <motion.div
               whileTap={{ scale: 0.98 }}
@@ -162,29 +179,84 @@ export const MobileView: React.FC<Props> = ({
               className="apple-card rounded-3xl p-8 text-center flex flex-col items-center justify-center space-y-3 cursor-pointer border border-sky-400/30 bg-gradient-to-b from-sky-500/10 via-[#1c1c1e] to-[#121214] shadow-xl"
             >
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-b from-sky-400 to-blue-600 text-white flex items-center justify-center shadow-lg">
-                <Camera className="w-8 h-8" />
+                <UploadCloud className="w-8 h-8" />
               </div>
 
               <div>
                 <span className="text-lg font-bold text-white font-sans block">
-                  Tap to Send Photos & Files
+                  Tap to Send Files
                 </span>
                 <span className="text-xs text-zinc-400 mt-1 block">
-                  Direct from Camera Roll, Gallery, or Files
+                  {targetDesktop ? `Direct P2P drop to ${targetDesktop.name}` : 'Drop files to connected device'}
                 </span>
               </div>
 
               <div className="mt-2 px-5 py-2.5 rounded-xl bg-white text-zinc-950 font-semibold text-xs shadow-md">
-                Choose from Phone
+                Choose Files
               </div>
             </motion.div>
+
+            {/* Category Grid (like Xender) */}
+            <div className="grid grid-cols-2 gap-2.5 font-sans text-xs">
+              <button
+                onClick={() => imageInputRef.current?.click()}
+                className="p-3.5 rounded-2xl bg-[#1c1c1e] border border-white/10 flex items-center gap-2.5 hover:bg-[#242426] transition-colors text-left"
+              >
+                <div className="p-2 rounded-xl bg-rose-500/20 text-rose-300">
+                  <Image className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-semibold text-white block">Photos</span>
+                  <span className="text-[10px] text-zinc-400">Gallery</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => videoInputRef.current?.click()}
+                className="p-3.5 rounded-2xl bg-[#1c1c1e] border border-white/10 flex items-center gap-2.5 hover:bg-[#242426] transition-colors text-left"
+              >
+                <div className="p-2 rounded-xl bg-purple-500/20 text-purple-300">
+                  <Video className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-semibold text-white block">Videos</span>
+                  <span className="text-[10px] text-zinc-400">Movies / Clips</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => audioInputRef.current?.click()}
+                className="p-3.5 rounded-2xl bg-[#1c1c1e] border border-white/10 flex items-center gap-2.5 hover:bg-[#242426] transition-colors text-left"
+              >
+                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-300">
+                  <Music className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-semibold text-white block">Music</span>
+                  <span className="text-[10px] text-zinc-400">Audio files</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => cameraInputRef.current?.click()}
+                className="p-3.5 rounded-2xl bg-[#1c1c1e] border border-white/10 flex items-center gap-2.5 hover:bg-[#242426] transition-colors text-left"
+              >
+                <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300">
+                  <Camera className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-semibold text-white block">Camera</span>
+                  <span className="text-[10px] text-zinc-400">Take Photo</span>
+                </div>
+              </button>
+            </div>
 
             {/* Uploading progress banner */}
             {isUploading && (
               <div className="apple-card rounded-2xl p-4 space-y-2">
                 <div className="flex justify-between text-xs font-mono text-zinc-300">
                   <span className="flex items-center gap-1.5 text-sky-400">
-                    <UploadCloud className="w-4 h-4 animate-bounce" /> Streaming direct to {targetDesktop.name}...
+                    <UploadCloud className="w-4 h-4 animate-bounce" /> Streaming direct to {targetDesktop?.name || 'Device'}...
                   </span>
                   <span>{uploadPercent}%</span>
                 </div>
@@ -196,23 +268,6 @@ export const MobileView: React.FC<Props> = ({
                 </div>
               </div>
             )}
-
-            {/* Quick Sample Photo */}
-            <button
-              onClick={() => {
-                const sample: FileItem = {
-                  id: `sample_${Date.now()}`,
-                  name: 'RAW_Camera_Sample_2026.jpg',
-                  size: 6.2 * 1024 * 1024,
-                  type: 'image/jpeg',
-                };
-                onSendFilesToDesktop([sample]);
-              }}
-              className="w-full py-3 rounded-2xl bg-white/[0.06] border border-white/[0.08] text-xs font-mono text-zinc-300 flex items-center justify-center gap-2 hover:bg-white/10 transition-colors"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-              Send Sample 4K Photo (6.2 MB)
-            </button>
           </div>
         )}
 
@@ -297,7 +352,7 @@ export const MobileView: React.FC<Props> = ({
                 <Inbox className="w-8 h-8 text-zinc-600 mx-auto" />
                 <h3 className="text-sm font-semibold text-white font-sans">No Files Received Yet</h3>
                 <p className="text-xs text-zinc-400">
-                  Drop files from your Mac/PC onto the phone avatar to view and save them here.
+                  Drop files from your Mac/PC to view and save them here.
                 </p>
               </div>
             ) : (
