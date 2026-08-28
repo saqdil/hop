@@ -101,8 +101,58 @@ export const App: React.FC = () => {
       setSelectedPeer((prev) => (prev?.id === remotePeerId ? null : prev));
     });
 
+    // Handle Live Incoming Progress on Receiver
+    const unsubProgress = engine.onFileProgress((file, percent, speedMBs, etaSeconds) => {
+      setTransfers((prev) => {
+        const existing = prev.find((t) => t.files.some((f) => f.id === file.id));
+        if (existing) {
+          return prev.map((t) =>
+            t.id === existing.id
+              ? {
+                  ...t,
+                  progressPercent: percent,
+                  transferredBytes: Math.round((t.totalBytes * percent) / 100),
+                  speedMBs,
+                  etaSeconds,
+                }
+              : t
+          );
+        } else {
+          const targetSender = peers[0] || {
+            id: 'remote',
+            name: 'Connected Device',
+            platform: 'windows',
+            deviceModel: 'PC',
+            ip: 'P2P',
+            status: 'online',
+            lastSeen: Date.now(),
+            avatarSeed: 'rx',
+          };
+
+          const incomingSession: TransferSession = {
+            id: `rx_${file.id}`,
+            sender: targetSender,
+            receiver: selfDevice,
+            files: [file],
+            totalBytes: file.size,
+            transferredBytes: Math.round((file.size * percent) / 100),
+            speedMBs,
+            progressPercent: percent,
+            status: percent >= 100 ? 'completed' : 'transferring',
+            startedAt: Date.now(),
+            etaSeconds,
+            connectionMode: 'webrtc',
+          };
+          return [incomingSession, ...prev];
+        }
+      });
+    });
+
     const unsubFileComplete = engine.onFileComplete((_completedFile, session) => {
-      setTransfers((prev) => [session, ...prev]);
+      setTransfers((prev) => {
+        const withoutPartial = prev.filter((t) => !t.files.some((f) => f.id === session.files[0]?.id));
+        return [session, ...withoutPartial];
+      });
     });
 
     const unsubClipboard = engine.onClipboard((item) => {
@@ -123,11 +173,12 @@ export const App: React.FC = () => {
     return () => {
       unsubConnect();
       unsubDisconnect();
+      unsubProgress();
       unsubFileComplete();
       unsubClipboard();
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
     };
-  }, [selfDevice, autoSyncClipboard]);
+  }, [selfDevice, autoSyncClipboard, peers]);
 
   // Save clipboard updates
   useEffect(() => {
@@ -190,14 +241,11 @@ export const App: React.FC = () => {
 
     for (const f of files) {
       try {
-        await peerEngineRef.current.sendFile(selectedPeer.id, f, (percent, speed) => {
+        await peerEngineRef.current.sendFile(selectedPeer.id, f, (percent, speed, eta) => {
           setTransfers((prev) =>
             prev.map((t) => {
               if (t.id !== session.id) return t;
               const transferred = Math.round((t.totalBytes * percent) / 100);
-              const remaining = Math.max(0, t.totalBytes - transferred);
-              const speedBytesPerSec = speed * 1024 * 1024;
-              const eta = speedBytesPerSec > 0 ? Math.ceil(remaining / speedBytesPerSec) : 0;
               return {
                 ...t,
                 progressPercent: percent,
@@ -244,14 +292,11 @@ export const App: React.FC = () => {
 
     for (const f of files) {
       try {
-        await peerEngineRef.current.sendFile(target.id, f, (percent, speed) => {
+        await peerEngineRef.current.sendFile(target.id, f, (percent, speed, eta) => {
           setTransfers((prev) =>
             prev.map((t) => {
               if (t.id !== session.id) return t;
               const transferred = Math.round((t.totalBytes * percent) / 100);
-              const remaining = Math.max(0, t.totalBytes - transferred);
-              const speedBytesPerSec = speed * 1024 * 1024;
-              const eta = speedBytesPerSec > 0 ? Math.ceil(remaining / speedBytesPerSec) : 0;
               return {
                 ...t,
                 progressPercent: percent,
