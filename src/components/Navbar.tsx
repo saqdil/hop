@@ -10,6 +10,7 @@ interface Props {
   currentView: AppView;
   onChangeView: (view: AppView) => void;
   onOpenQrPairing: () => void;
+  onOpenHotspotModal: () => void;
   activeTransfersCount: number;
   clipboardItemsCount: number;
 }
@@ -19,6 +20,7 @@ export const Navbar: React.FC<Props> = ({
   currentView,
   onChangeView,
   onOpenQrPairing,
+  onOpenHotspotModal,
   activeTransfersCount,
   clipboardItemsCount,
 }) => {
@@ -76,7 +78,16 @@ export const Navbar: React.FC<Props> = ({
         </div>
 
         {/* Right Controls: Device Status & QR Mobile Pair */}
-        <div className="flex items-center gap-2.5 font-mono text-xs">
+        <div className="flex items-center gap-2 font-mono text-xs">
+          {/* P2P / Hotspot Mode Button */}
+          <button
+            onClick={onOpenHotspotModal}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-sky-300 font-sans font-medium text-xs border border-white/10 transition-colors"
+          >
+            <Radio className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
+            <span>P2P Hotspot</span>
+          </button>
+
           {/* LAN IP & Device Badge */}
           <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-xl bg-white/[0.06] border border-white/[0.08] text-zinc-300 text-[11px]">
             {selfDevice.platform === 'mac' ? (
@@ -94,7 +105,7 @@ export const Navbar: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* QR Code Pair Button (Instant iPhone & Android Pairing) */}
+          {/* QR Code Pair Button */}
           <button
             onClick={onOpenQrPairing}
             className="px-3 py-1.5 rounded-xl bg-gradient-to-b from-sky-400 to-blue-600 hover:from-sky-300 hover:to-blue-500 text-white font-sans font-semibold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-[0.98]"

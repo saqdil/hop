@@ -1,6 +1,6 @@
 ﻿import React from 'react';
-import { TransferSession } from '../types/transfer';
-import { ArrowUpDown, Zap, CheckCircle2, Pause, Play, XCircle, Download, FileText, Smartphone, Laptop } from 'lucide-react';
+import { TransferSession, FileItem } from '../types/transfer';
+import { ArrowUpDown, Zap, CheckCircle2, Pause, Play, XCircle, Download, FileText, Smartphone, Laptop, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
   onResume: (id: string) => void;
   onCancel: (id: string) => void;
   onClearHistory: () => void;
+  onPreviewFile?: (file: FileItem) => void;
 }
 
 export const TransferQueue: React.FC<Props> = ({
@@ -17,23 +18,31 @@ export const TransferQueue: React.FC<Props> = ({
   onResume,
   onCancel,
   onClearHistory,
+  onPreviewFile,
 }) => {
   const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 B';
+    if (!bytes || bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
-  const handleDownloadFile = (fileName: string) => {
-    const blob = new Blob([`Hop Transferred Payload for ${fileName}`], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleDownloadFile = (file: FileItem) => {
+    const url = file.blobUrl || file.previewUrl || file.downloadUrl || (file.rawFile ? URL.createObjectURL(file.rawFile) : '');
+    if (url) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      a.click();
+    } else if (file.rawBlob) {
+      const blobUrl = URL.createObjectURL(file.rawBlob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = file.name;
+      a.click();
+      URL.revokeObjectURL(blobUrl);
+    }
   };
 
   return (
@@ -52,7 +61,7 @@ export const TransferQueue: React.FC<Props> = ({
               </span>
             </h2>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Zero-cloud binary streaming direct over local network sockets.
+              Zero-cloud binary streaming direct over local network sockets and WebRTC DataChannels.
             </p>
           </div>
         </div>
@@ -129,13 +138,24 @@ export const TransferQueue: React.FC<Props> = ({
                         <div className="flex items-center gap-2 shrink-0">
                           <span className="text-zinc-400 text-[11px]">{formatBytes(file.size)}</span>
                           {isCompleted && (
-                            <button
-                              onClick={() => handleDownloadFile(file.name)}
-                              className="p-1 rounded bg-white/[0.08] hover:bg-white/20 text-white transition-colors"
-                              title="Download to system"
-                            >
-                              <Download className="w-3 h-3" />
-                            </button>
+                            <div className="flex items-center gap-1">
+                              {onPreviewFile && (
+                                <button
+                                  onClick={() => onPreviewFile(file)}
+                                  className="p-1 rounded bg-white/[0.08] hover:bg-white/20 text-sky-300 transition-colors"
+                                  title="View Media"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleDownloadFile(file)}
+                                className="p-1 rounded bg-white/[0.08] hover:bg-white/20 text-white transition-colors"
+                                title="Download to system"
+                              >
+                                <Download className="w-3 h-3" />
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>

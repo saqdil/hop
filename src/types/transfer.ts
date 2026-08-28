@@ -7,10 +7,14 @@ export interface FileItem {
   type: string;
   lastModified?: number;
   previewUrl?: string;
+  blobUrl?: string;
   rawFile?: File;
+  rawBlob?: Blob;
+  downloadUrl?: string;
 }
 
 export type TransferStatus = 'pending' | 'transferring' | 'paused' | 'completed' | 'cancelled' | 'error';
+export type ConnectionMode = 'lan' | 'webrtc' | 'hotspot';
 
 export interface TransferSession {
   id: string;
@@ -26,6 +30,7 @@ export interface TransferSession {
   completedAt?: number;
   etaSeconds: number;
   errorMessage?: string;
+  connectionMode?: ConnectionMode;
 }
 
 export type ClipboardCategory = 'url' | 'code' | 'otp' | 'text' | 'color';

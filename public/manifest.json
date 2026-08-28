@@ -1,0 +1,18 @@
+﻿{
+  "name": "Hop — Cross-Device Drop & Clipboard",
+  "short_name": "Hop",
+  "description": "Universal P2P file dropping and real-time shared clipboard across Android, iOS, macOS, and Windows",
+  "start_url": "/?view=mobile",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

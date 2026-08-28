@@ -1,14 +1,19 @@
 {
-  "name": "airdrop-x",
+  "name": "hop",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "start": "node server.js",
+    "preview": "vite preview",
+    "cap:sync": "cap sync",
+    "cap:android": "cap add android && cap sync",
+    "cap:ios": "cap add ios && cap sync"
   },
   "dependencies": {
+    "@capacitor/core": "^8.5.0",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "framer-motion": "^11.18.2",
@@ -20,6 +25,7 @@
     "ws": "^8.21.3"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.0",
     "@types/canvas-confetti": "^1.9.0",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
@@ -30,5 +36,6 @@
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
     "vite": "^5.4.14"
-  }
+  },
+  "description": "Universal Cross-Platform P2P LAN Drop & Real-Time Shared Clipboard Studio"
 }

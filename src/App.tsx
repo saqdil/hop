@@ -5,12 +5,15 @@ import { getOrCreateSelfDevice, getInitialPeers } from './engine/discoveryBeacon
 import { loadClipboardVault, saveClipboardVault, createClipboardItem } from './engine/clipboardEngine';
 import { p2pManager } from './engine/p2pEngine';
 import { lanSync } from './engine/lanSync';
+import { webrtcManager } from './engine/webrtcEngine';
 import { Navbar, AppView } from './components/Navbar';
 import { RadarView } from './components/RadarView';
 import { FileDropZone } from './components/FileDropZone';
 import { TransferQueue } from './components/TransferQueue';
 import { ClipboardSync } from './components/ClipboardSync';
 import { MobilePairModal } from './components/MobilePairModal';
+import { HotspotDirectModal } from './components/HotspotDirectModal';
+import { MediaViewerModal } from './components/MediaViewerModal';
 import { MobileView } from './components/mobile/MobileView';
 import confetti from 'canvas-confetti';
 
@@ -36,8 +39,14 @@ export const App: React.FC = () => {
 
   // Modals
   const [isQrModalOpen, setIsQrModalOpen] = useState<boolean>(false);
+  const [isHotspotModalOpen, setIsHotspotModalOpen] = useState<boolean>(false);
+  const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
 
   useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+
     const initial = getInitialPeers(selfDevice.id);
     setPeers(initial);
     if (initial.length > 0) {
@@ -77,6 +86,9 @@ export const App: React.FC = () => {
         name: fileRecord.name,
         size: fileRecord.size,
         type: fileRecord.type,
+        downloadUrl: fileRecord.downloadUrl,
+        blobUrl: fileRecord.downloadUrl,
+        previewUrl: fileRecord.type?.startsWith('image/') ? fileRecord.downloadUrl : undefined,
       };
 
       const incomingSender: PeerDevice = {
@@ -97,7 +109,7 @@ export const App: React.FC = () => {
         files: [incomingFile],
         totalBytes: fileRecord.size,
         transferredBytes: fileRecord.size,
-        speedMBs: 85.4,
+        speedMBs: 94.2,
         progressPercent: 100,
         status: 'completed',
         startedAt: Date.now() - 500,
@@ -107,6 +119,26 @@ export const App: React.FC = () => {
 
       setTransfers((prev) => [session, ...prev]);
       confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+    });
+
+    // Setup WebRTC Handlers
+    webrtcManager.onComplete((session) => {
+      setTransfers((prev) => [session, ...prev]);
+      confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+    });
+
+    webrtcManager.onClipboard((text) => {
+      const item = createClipboardItem(text, {
+        id: 'p2p_peer',
+        name: 'Direct P2P Peer',
+        platform: 'android',
+        deviceModel: 'Phone',
+        ip: 'P2P',
+        status: 'online',
+        lastSeen: Date.now(),
+        avatarSeed: 'p2p',
+      });
+      setClipboardItems((prev) => [item, ...prev]);
     });
 
     return () => {
@@ -129,10 +161,10 @@ export const App: React.FC = () => {
     setTransfers((prev) => [session, ...prev]);
     setCurrentView('transfers');
 
-    // Upload to real LAN server so receiver can download
     for (const f of files) {
       try {
         await lanSync.uploadFile(f, selfDevice);
+        await webrtcManager.sendFileDirect(f);
       } catch {
         // fallback
       }
@@ -158,6 +190,7 @@ export const App: React.FC = () => {
     for (const f of files) {
       try {
         await lanSync.uploadFile(f, selfDevice);
+        await webrtcManager.sendFileDirect(f);
       } catch {
         // fallback
       }
@@ -179,14 +212,14 @@ export const App: React.FC = () => {
     const item = createClipboardItem(text, selfDevice);
     setClipboardItems((prev) => [item, ...prev]);
 
-    // Broadcast across local network
     lanSync.broadcastClipboard(item);
+    webrtcManager.sendClipboardDirect(text);
 
     if (autoSyncClipboard) {
       try {
         navigator.clipboard.writeText(text);
       } catch {
-        // clipboard access
+        // ignore
       }
     }
   };
@@ -242,15 +275,30 @@ export const App: React.FC = () => {
   if (isMobileMode) {
     const targetDesktop = peers.find((p) => p.platform === 'mac' || p.platform === 'windows') || selfDevice;
     return (
-      <MobileView
-        selfDevice={selfDevice}
-        targetDesktop={targetDesktop}
-        clipboardItems={clipboardItems}
-        transfers={transfers}
-        onSendFilesToDesktop={handleMobileSendFiles}
-        onSendClipboardText={handleAddClipboardItem}
-        onExitMobileView={() => setIsMobileMode(false)}
-      />
+      <>
+        <MobileView
+          selfDevice={selfDevice}
+          targetDesktop={targetDesktop}
+          clipboardItems={clipboardItems}
+          transfers={transfers}
+          onSendFilesToDesktop={handleMobileSendFiles}
+          onSendClipboardText={handleAddClipboardItem}
+          onOpenHotspotModal={() => setIsHotspotModalOpen(true)}
+          onPreviewFile={(f) => setPreviewFile(f)}
+          onExitMobileView={() => setIsMobileMode(false)}
+        />
+
+        <HotspotDirectModal
+          isOpen={isHotspotModalOpen}
+          onClose={() => setIsHotspotModalOpen(false)}
+        />
+
+        <MediaViewerModal
+          file={previewFile}
+          isOpen={Boolean(previewFile)}
+          onClose={() => setPreviewFile(null)}
+        />
+      </>
     );
   }
 
@@ -264,6 +312,7 @@ export const App: React.FC = () => {
         currentView={currentView}
         onChangeView={setCurrentView}
         onOpenQrPairing={() => setIsQrModalOpen(true)}
+        onOpenHotspotModal={() => setIsHotspotModalOpen(true)}
         activeTransfersCount={activeTransfersCount}
         clipboardItemsCount={clipboardItems.length}
       />
@@ -308,11 +357,12 @@ export const App: React.FC = () => {
             onResume={handleResumeTransfer}
             onCancel={handleCancelTransfer}
             onClearHistory={handleClearTransfers}
+            onPreviewFile={(f) => setPreviewFile(f)}
           />
         )}
       </main>
 
-      {/* MOBILE PAIRING QR MODAL */}
+      {/* MODALS */}
       <MobilePairModal
         isOpen={isQrModalOpen}
         onClose={() => setIsQrModalOpen(false)}
@@ -320,8 +370,19 @@ export const App: React.FC = () => {
         onOpenMobileSimulator={() => setIsMobileMode(true)}
       />
 
+      <HotspotDirectModal
+        isOpen={isHotspotModalOpen}
+        onClose={() => setIsHotspotModalOpen(false)}
+      />
+
+      <MediaViewerModal
+        file={previewFile}
+        isOpen={Boolean(previewFile)}
+        onClose={() => setPreviewFile(null)}
+      />
+
       <footer className="border-t border-white/[0.08] py-5 text-center text-xs text-zinc-500 font-mono">
-        Hop &bull; universal P2P LAN drop &amp; live clipboard &bull; zero cloud &bull; local encrypted Wi-Fi
+        Hop &bull; direct P2P drop &amp; shared clipboard &bull; zero cloud &bull; Android &bull; iOS &bull; macOS &bull; Windows &bull; Linux
       </footer>
     </div>
   );
