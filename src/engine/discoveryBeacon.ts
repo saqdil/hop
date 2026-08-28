@@ -6,7 +6,14 @@ export function getOrCreateSelfDevice(): PeerDevice {
   const stored = localStorage.getItem(STORAGE_KEY_SELF);
   if (stored) {
     try {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      // Auto-update IP if hostname is available
+      if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        parsed.ip = window.location.hostname;
+      } else {
+        parsed.ip = '192.168.1.102';
+      }
+      return parsed;
     } catch {
       // fallback
     }
@@ -31,12 +38,16 @@ export function getOrCreateSelfDevice(): PeerDevice {
     deviceModel = 'Linux Workstation';
   }
 
+  const currentHost = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    ? window.location.hostname
+    : '192.168.1.102';
+
   const newDevice: PeerDevice = {
     id: `dev_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     name: `${platform === 'mac' ? 'MacBook' : platform === 'ios' ? 'iPhone' : platform === 'android' ? 'Galaxy' : 'Desktop'} Studio`,
     platform,
     deviceModel,
-    ip: '192.168.1.108',
+    ip: currentHost,
     status: 'online',
     isCurrentDevice: true,
     lastSeen: Date.now(),

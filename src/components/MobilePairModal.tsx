@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, Smartphone, Copy, Check, ExternalLink, ShieldCheck } from 'lucide-react';
+import { X, Smartphone, Copy, Check, ExternalLink, ShieldCheck, Wifi, Edit3 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Props {
@@ -16,11 +16,14 @@ export const MobilePairModal: React.FC<Props> = ({
   localIp,
   onOpenMobileSimulator,
 }) => {
+  const [customIp, setCustomIp] = useState<string>(localIp || '192.168.1.102');
+  const [port] = useState<string>(window.location.port || '5180');
+  const [isEditingIp, setIsEditingIp] = useState(false);
   const [copied, setCopied] = useState(false);
 
   if (!isOpen) return null;
 
-  const mobileUrl = `http://${localIp}:5180/?view=mobile`;
+  const mobileUrl = `http://${customIp}:${port}/?view=mobile`;
 
   const handleCopyUrl = () => {
     navigator.clipboard.writeText(mobileUrl);
@@ -32,10 +35,10 @@ export const MobilePairModal: React.FC<Props> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-2xl">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
+        animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
         transition={{ type: 'spring', stiffness: 450, damping: 30 }}
-        className="w-full max-w-md rounded-3xl apple-card border border-white/15 p-6 shadow-2xl space-y-5"
+        className="w-full max-w-md rounded-3xl apple-card border border-white/15 p-6 shadow-2xl space-y-4"
       >
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -58,16 +61,42 @@ export const MobilePairModal: React.FC<Props> = ({
           </button>
         </div>
 
+        {/* IP Host Config Bar */}
+        <div className="p-2.5 rounded-xl bg-black/30 border border-white/[0.06] flex items-center justify-between font-mono text-xs">
+          <div className="flex items-center gap-2 text-zinc-300">
+            <Wifi className="w-3.5 h-3.5 text-emerald-400" />
+            {isEditingIp ? (
+              <input
+                type="text"
+                value={customIp}
+                onChange={(e) => setCustomIp(e.target.value)}
+                placeholder="192.168.1.102"
+                className="w-36 h-6 px-1.5 rounded bg-zinc-800 text-white focus:outline-none focus:border-sky-400 border border-white/10"
+              />
+            ) : (
+              <span>Host IP: <strong className="text-white">{customIp}</strong>:{port}</span>
+            )}
+          </div>
+
+          <button
+            onClick={() => setIsEditingIp(!isEditingIp)}
+            className="text-[11px] text-sky-400 hover:text-sky-300 flex items-center gap-1"
+          >
+            <Edit3 className="w-3 h-3" />
+            {isEditingIp ? 'Done' : 'Change IP'}
+          </button>
+        </div>
+
         {/* QR Code Container */}
-        <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-white text-zinc-950 shadow-inner space-y-3">
+        <div className="flex flex-col items-center justify-center p-5 rounded-2xl bg-white text-zinc-950 shadow-inner space-y-2.5">
           <QRCodeSVG
             value={mobileUrl}
             size={180}
             level="H"
             includeMargin={false}
           />
-          <div className="text-center font-mono text-[11px] text-zinc-600 font-medium">
-            Scan with iPhone Camera or Android Lens
+          <div className="text-center font-mono text-[11px] text-zinc-600 font-medium break-all">
+            {mobileUrl}
           </div>
         </div>
 
@@ -75,12 +104,12 @@ export const MobilePairModal: React.FC<Props> = ({
         <div className="space-y-2 text-xs text-zinc-300 font-sans">
           <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-black/30 border border-white/[0.06]">
             <span className="w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 font-mono font-bold flex items-center justify-center shrink-0">1</span>
-            <span>Ensure your phone is connected to the same Wi-Fi network.</span>
+            <span>Make sure your phone is connected to the same Wi-Fi (<strong>TL-WA850RE</strong>).</span>
           </div>
 
           <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-black/30 border border-white/[0.06]">
             <span className="w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 font-mono font-bold flex items-center justify-center shrink-0">2</span>
-            <span>Point camera at the QR code and tap the Safari/Chrome link banner.</span>
+            <span>Scan with phone Camera or type <strong>http://{customIp}:{port}/?view=mobile</strong> in Chrome/Safari.</span>
           </div>
         </div>
 
