@@ -3,32 +3,35 @@ import { ClipboardItem, FileItem } from '../types/transfer';
 
 type PeerCallback = (peers: PeerDevice[]) => void;
 type ClipboardCallback = (item: ClipboardItem) => void;
-type FileCallback = (fileRecord: any) => void;
+type FileCallback = (file: any) => void;
 
-class LanSyncClient {
+class LanSyncBridge {
   private ws: WebSocket | null = null;
-  private peerListeners: Set<PeerCallback> = new Set();
-  private clipboardListeners: Set<ClipboardCallback> = new Set();
-  private fileListeners: Set<FileCallback> = new Set();
+  private peerCallbacks: PeerCallback[] = [];
+  private clipboardCallbacks: ClipboardCallback[] = [];
+  private fileCallbacks: FileCallback[] = [];
+  private isConnecting: boolean = false;
   private selfDevice: PeerDevice | null = null;
-  private reconnectTimer: any = null;
 
-  public init(self: PeerDevice) {
-    this.selfDevice = self;
+  public init(selfDevice: PeerDevice) {
+    this.selfDevice = selfDevice;
     this.connect();
   }
 
   private connect() {
-    if (typeof window === 'undefined') return;
-
-    const host = window.location.hostname || 'localhost';
-    const port = window.location.port || '5180';
-    const wsUrl = `ws://${host}:${port}`;
+    if (typeof window === 'undefined' || this.isConnecting) return;
+    this.isConnecting = true;
 
     try {
+      const isHttps = window.location.protocol === 'https:';
+      const wsProtocol = isHttps ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      const wsUrl = `${wsProtocol}//${host}`;
+
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
+        this.isConnecting = false;
         if (this.selfDevice && this.ws) {
           this.ws.send(
             JSON.stringify({
@@ -41,35 +44,28 @@ class LanSyncClient {
 
       this.ws.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data);
-
-          if (data.type === 'PEERS_UPDATE') {
-            this.peerListeners.forEach((cb) => cb(data.peers));
-          }
-
-          if (data.type === 'CLIPBOARD_SYNC') {
-            this.clipboardListeners.forEach((cb) => cb(data.item));
-          }
-
-          if (data.type === 'FILE_RECEIVED') {
-            this.fileListeners.forEach((cb) => cb(data.file));
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'PEERS_UPDATE') {
+            this.peerCallbacks.forEach((cb) => cb(msg.peers));
+          } else if (msg.type === 'CLIPBOARD_SYNC') {
+            this.clipboardCallbacks.forEach((cb) => cb(msg.item));
+          } else if (msg.type === 'FILE_RECEIVED') {
+            this.fileCallbacks.forEach((cb) => cb(msg.file));
           }
         } catch {
           // ignore
         }
       };
 
-      this.ws.onclose = () => {
-        // Auto-reconnect every 3s
-        clearTimeout(this.reconnectTimer);
-        this.reconnectTimer = setTimeout(() => this.connect(), 3000);
+      this.ws.onerror = () => {
+        this.isConnecting = false;
       };
 
-      this.ws.onerror = () => {
-        // quiet error
+      this.ws.onclose = () => {
+        this.isConnecting = false;
       };
     } catch {
-      // fallback
+      this.isConnecting = false;
     }
   }
 
@@ -84,77 +80,48 @@ class LanSyncClient {
     }
   }
 
-  public async uploadFile(
-    file: File | FileItem,
-    sender: PeerDevice,
-    onProgress?: (percent: number, speedMBs: number) => void
-  ): Promise<any> {
-    const host = window.location.hostname || 'localhost';
-    const port = window.location.port || '5180';
-    const uploadUrl = `http://${host}:${port}/api/upload`;
+  public async uploadFile(fileItem: FileItem, sender: PeerDevice): Promise<any> {
+    if (!fileItem.rawFile && !fileItem.rawBlob) return;
 
-    let blob: Blob;
-    let fileName = file.name;
-    let fileType = file.type;
+    const payload = fileItem.rawFile || fileItem.rawBlob!;
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      headers: {
+        'x-file-name': encodeURIComponent(fileItem.name),
+        'x-file-type': fileItem.type || 'application/octet-stream',
+        'x-sender-name': encodeURIComponent(sender.name),
+        'x-sender-platform': sender.platform,
+      },
+      body: payload,
+    });
 
-    if ('rawFile' in file && file.rawFile) {
-      blob = file.rawFile;
-    } else {
-      blob = new Blob([`AirDropX Payload for ${fileName}`], { type: fileType });
+    if (!response.ok) {
+      throw new Error(`Upload failed: ${response.statusText}`);
     }
 
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', uploadUrl, true);
-
-      xhr.setRequestHeader('x-file-name', encodeURIComponent(fileName));
-      xhr.setRequestHeader('x-file-type', fileType);
-      xhr.setRequestHeader('x-sender-name', encodeURIComponent(sender.name));
-      xhr.setRequestHeader('x-sender-platform', sender.platform);
-
-      const startTime = performance.now();
-
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable && onProgress) {
-          const percent = Math.round((e.loaded / e.total) * 100);
-          const elapsedSec = (performance.now() - startTime) / 1000;
-          const speedMBs = elapsedSec > 0 ? Math.round((e.loaded / (1024 * 1024) / elapsedSec) * 10) / 10 : 0;
-          onProgress(percent, speedMBs);
-        }
-      };
-
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            const resp = JSON.parse(xhr.responseText);
-            resolve(resp);
-          } catch {
-            resolve({ success: true });
-          }
-        } else {
-          reject(new Error(`Upload failed: ${xhr.statusText}`));
-        }
-      };
-
-      xhr.onerror = () => reject(new Error('Network error during upload'));
-      xhr.send(blob);
-    });
+    return await response.json();
   }
 
   public onPeers(cb: PeerCallback) {
-    this.peerListeners.add(cb);
-    return () => this.peerListeners.delete(cb);
+    this.peerCallbacks.push(cb);
+    return () => {
+      this.peerCallbacks = this.peerCallbacks.filter((c) => c !== cb);
+    };
   }
 
   public onClipboard(cb: ClipboardCallback) {
-    this.clipboardListeners.add(cb);
-    return () => this.clipboardListeners.delete(cb);
+    this.clipboardCallbacks.push(cb);
+    return () => {
+      this.clipboardCallbacks = this.clipboardCallbacks.filter((c) => c !== cb);
+    };
   }
 
   public onFile(cb: FileCallback) {
-    this.fileListeners.add(cb);
-    return () => this.fileListeners.delete(cb);
+    this.fileCallbacks.push(cb);
+    return () => {
+      this.fileCallbacks = this.fileCallbacks.filter((c) => c !== cb);
+    };
   }
 }
 
-export const lanSync = new LanSyncClient();
+export const lanSync = new LanSyncBridge();

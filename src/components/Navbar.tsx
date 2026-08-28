@@ -1,6 +1,6 @@
 ﻿import React from 'react';
 import { PeerDevice } from '../types/peer';
-import { Radio, QrCode, Clipboard, ArrowUpDown, Laptop, Smartphone, Wifi, Zap, Download } from 'lucide-react';
+import { Radio, QrCode, Clipboard, ArrowUpDown, Laptop, Smartphone, Globe, Zap, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export type AppView = 'radar' | 'clipboard' | 'transfers';
@@ -31,6 +31,8 @@ export const Navbar: React.FC<Props> = ({
     { id: 'clipboard' as AppView, label: 'Live Clipboard', icon: Clipboard, badge: clipboardItemsCount },
     { id: 'transfers' as AppView, label: 'Transfers', icon: ArrowUpDown, badge: activeTransfersCount },
   ];
+
+  const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'hop-transfer.vercel.app';
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-white/[0.08] bg-[#161618]/75 backdrop-blur-3xl">
@@ -96,10 +98,10 @@ export const Navbar: React.FC<Props> = ({
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-sky-300 font-sans font-medium text-xs border border-white/10 transition-colors"
           >
             <Radio className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
-            <span>P2P Hotspot</span>
+            <span>P2P Direct</span>
           </button>
 
-          {/* LAN IP & Device Badge */}
+          {/* Dynamic Host & Device Badge */}
           <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-xl bg-white/[0.06] border border-white/[0.08] text-zinc-300 text-[11px]">
             {selfDevice.platform === 'mac' ? (
               <Laptop className="w-3.5 h-3.5 text-zinc-400" />
@@ -111,8 +113,8 @@ export const Navbar: React.FC<Props> = ({
             <span className="font-semibold text-white truncate max-w-[120px]">{selfDevice.name}</span>
             <span className="text-zinc-500">•</span>
             <div className="flex items-center gap-1 text-emerald-400">
-              <Wifi className="w-3 h-3" />
-              <span>{selfDevice.ip}</span>
+              <Globe className="w-3 h-3" />
+              <span className="truncate max-w-[140px]">{currentHost}</span>
             </div>
           </div>
 

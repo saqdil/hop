@@ -6,14 +6,13 @@ import { motion } from 'framer-motion';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  localIp: string;
+  localIp?: string;
   deferredInstallPrompt?: any;
 }
 
 export const DownloadAppModal: React.FC<Props> = ({
   isOpen,
   onClose,
-  localIp,
   deferredInstallPrompt,
 }) => {
   const [activeTab, setActiveTab] = useState<'android' | 'ios' | 'pc'>('android');
@@ -21,7 +20,8 @@ export const DownloadAppModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
-  const mobileUrl = `http://${localIp || '192.168.1.102'}:5180/?view=mobile`;
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://hop-transfer.vercel.app';
+  const mobileUrl = `${currentOrigin}/?view=mobile`;
 
   const handleInstallApp = async () => {
     if (deferredInstallPrompt) {
@@ -31,7 +31,7 @@ export const DownloadAppModal: React.FC<Props> = ({
         setInstalled(true);
       }
     } else {
-      alert('To install on Android:\n1. Open http://' + (localIp || '192.168.1.102') + ':5180 on your phone\n2. Tap the Chrome menu (⋮) -> Install app or Add to Home Screen.');
+      alert(`To install on Android:\n1. Open ${currentOrigin} on your phone\n2. Tap the Chrome menu (⋮) -> Install app or Add to Home Screen.`);
     }
   };
 
@@ -123,11 +123,11 @@ export const DownloadAppModal: React.FC<Props> = ({
               <div className="font-semibold text-zinc-200 text-[11px]">How it works on Android:</div>
               <div className="flex items-center gap-2 text-[11px] text-zinc-400">
                 <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-[10px]">✓</span>
-                <span>Open <strong>http://{localIp || '192.168.1.102'}:5180</strong> in Chrome on your phone.</span>
+                <span>Open <strong>{currentOrigin}</strong> in Chrome on your phone.</span>
               </div>
               <div className="flex items-center gap-2 text-[11px] text-zinc-400">
                 <span className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-[10px]">✓</span>
-                <span>Tap <strong>"Install App"</strong> in the banner &rarr; Android automatically packages and places Hop on your Home Screen!</span>
+                <span>Tap <strong>"Install App"</strong> in the banner &rarr; Android automatically places Hop on your Home Screen!</span>
               </div>
             </div>
           </div>
@@ -177,8 +177,8 @@ export const DownloadAppModal: React.FC<Props> = ({
               <p className="text-zinc-400 text-[11px]">
                 Access Hop instantly in any browser (Chrome, Edge, Safari, Firefox, Brave, Arc) on Windows, macOS, or Linux.
               </p>
-              <div className="p-2 rounded-xl bg-black/50 font-mono text-sky-300 text-[11px]">
-                http://localhost:5180 &bull; http://{localIp}:5180
+              <div className="p-2 rounded-xl bg-black/50 font-mono text-sky-300 text-[11px] break-all">
+                {currentOrigin}
               </div>
             </div>
 

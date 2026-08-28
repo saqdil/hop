@@ -86,7 +86,7 @@ export const HotspotDirectModal: React.FC<Props> = ({ isOpen, onClose, onEnterRo
                 <span>Connect your other Phone or Mac to the Hotspot</span>
               </div>
               <p className="text-zinc-400 pl-7 text-[11px]">
-                Join the hotspot Wi-Fi. 0 cellular data is consumed during local file transfers!
+                Join the hotspot Wi-Fi. 0 cellular data is consumed during direct local file transfers!
               </p>
             </div>
 
@@ -96,7 +96,7 @@ export const HotspotDirectModal: React.FC<Props> = ({ isOpen, onClose, onEnterRo
                 <span>Open Hop &rarr; Instant 100+ MB/s Drop</span>
               </div>
               <p className="text-zinc-400 pl-7 text-[11px]">
-                Hop detects the gateway (192.168.43.1 / 172.20.10.1) and transfers at full Wi-Fi line speed.
+                Hop detects the direct link and transfers at full Wi-Fi line speed.
               </p>
             </div>
           </div>
