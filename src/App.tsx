@@ -14,6 +14,7 @@ import { ClipboardSync } from './components/ClipboardSync';
 import { MobilePairModal } from './components/MobilePairModal';
 import { HotspotDirectModal } from './components/HotspotDirectModal';
 import { MediaViewerModal } from './components/MediaViewerModal';
+import { DownloadAppModal } from './components/DownloadAppModal';
 import { MobileView } from './components/mobile/MobileView';
 import confetti from 'canvas-confetti';
 
@@ -40,6 +41,7 @@ export const App: React.FC = () => {
   // Modals
   const [isQrModalOpen, setIsQrModalOpen] = useState<boolean>(false);
   const [isHotspotModalOpen, setIsHotspotModalOpen] = useState<boolean>(false);
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState<boolean>(false);
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
 
   useEffect(() => {
@@ -313,6 +315,7 @@ export const App: React.FC = () => {
         onChangeView={setCurrentView}
         onOpenQrPairing={() => setIsQrModalOpen(true)}
         onOpenHotspotModal={() => setIsHotspotModalOpen(true)}
+        onOpenDownloadModal={() => setIsDownloadModalOpen(true)}
         activeTransfersCount={activeTransfersCount}
         clipboardItemsCount={clipboardItems.length}
       />
@@ -375,6 +378,12 @@ export const App: React.FC = () => {
         onClose={() => setIsHotspotModalOpen(false)}
       />
 
+      <DownloadAppModal
+        isOpen={isDownloadModalOpen}
+        onClose={() => setIsDownloadModalOpen(false)}
+        localIp={selfDevice.ip}
+      />
+
       <MediaViewerModal
         file={previewFile}
         isOpen={Boolean(previewFile)}
@@ -382,7 +391,7 @@ export const App: React.FC = () => {
       />
 
       <footer className="border-t border-white/[0.08] py-5 text-center text-xs text-zinc-500 font-mono">
-        Hop &bull; direct P2P drop &amp; shared clipboard &bull; zero cloud &bull; Android &bull; iOS &bull; macOS &bull; Windows &bull; Linux
+        Hop &bull; direct P2P drop &amp; shared clipboard &bull; zero cloud &bull; Android APK &bull; iOS App &bull; PC Web Studio
       </footer>
     </div>
   );

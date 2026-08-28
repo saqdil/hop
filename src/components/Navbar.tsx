@@ -1,6 +1,6 @@
 ﻿import React from 'react';
 import { PeerDevice } from '../types/peer';
-import { Radio, QrCode, Clipboard, ArrowUpDown, Laptop, Smartphone, Wifi, Zap } from 'lucide-react';
+import { Radio, QrCode, Clipboard, ArrowUpDown, Laptop, Smartphone, Wifi, Zap, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export type AppView = 'radar' | 'clipboard' | 'transfers';
@@ -11,6 +11,7 @@ interface Props {
   onChangeView: (view: AppView) => void;
   onOpenQrPairing: () => void;
   onOpenHotspotModal: () => void;
+  onOpenDownloadModal: () => void;
   activeTransfersCount: number;
   clipboardItemsCount: number;
 }
@@ -21,6 +22,7 @@ export const Navbar: React.FC<Props> = ({
   onChangeView,
   onOpenQrPairing,
   onOpenHotspotModal,
+  onOpenDownloadModal,
   activeTransfersCount,
   clipboardItemsCount,
 }) => {
@@ -79,6 +81,15 @@ export const Navbar: React.FC<Props> = ({
 
         {/* Right Controls: Device Status & QR Mobile Pair */}
         <div className="flex items-center gap-2 font-mono text-xs">
+          {/* Download App (APK / iOS) Button */}
+          <button
+            onClick={onOpenDownloadModal}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 font-sans font-semibold text-xs border border-emerald-500/30 transition-colors shadow-sm"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Get App (APK)</span>
+          </button>
+
           {/* P2P / Hotspot Mode Button */}
           <button
             onClick={onOpenHotspotModal}
