@@ -1,4 +1,4 @@
-﻿import Peer, { DataConnection } from 'peerjs';
+import Peer, { DataConnection } from 'peerjs';
 import { PeerDevice, DevicePlatform } from '../types/peer';
 import { FileItem, TransferSession, ClipboardItem } from '../types/transfer';
 
@@ -311,7 +311,12 @@ export class PeerEngine {
     file: FileItem,
     onProgress?: (percent: number, speedMBs: number, etaSeconds: number) => void
   ): Promise<void> {
-    const conn = this.connections.get(remotePeerId);
+    const conn =
+      this.connections.get(remotePeerId) ||
+      this.connections.get(`hop-${remotePeerId}`) ||
+      this.connections.get(remotePeerId.replace('hop-', '')) ||
+      Array.from(this.connections.values())[0];
+
     if (!conn) {
       throw new Error('Device is not connected');
     }

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PeerDevice } from './types/peer';
 import { FileItem, TransferSession, ClipboardItem } from './types/transfer';
 import { getRealDevice, saveCustomDeviceName } from './engine/deviceDetector';
@@ -216,7 +216,8 @@ export const App: React.FC = () => {
 
   // --- ACTIONS ---
   const handleSendFiles = async (files: FileItem[]) => {
-    if (!selectedPeer || !peerEngineRef.current) {
+    const targetPeer = selectedPeer || peers[0];
+    if (!targetPeer || !peerEngineRef.current) {
       alert('Please connect a device first by scanning the QR code or entering a PIN!');
       return;
     }
@@ -224,7 +225,7 @@ export const App: React.FC = () => {
     const session: TransferSession = {
       id: `tx_${Date.now()}`,
       sender: selfDevice,
-      receiver: selectedPeer,
+      receiver: targetPeer,
       files,
       totalBytes: files.reduce((acc, f) => acc + f.size, 0),
       transferredBytes: 0,
@@ -241,7 +242,7 @@ export const App: React.FC = () => {
 
     for (const f of files) {
       try {
-        await peerEngineRef.current.sendFile(selectedPeer.id, f, (percent, speed, eta) => {
+        await peerEngineRef.current.sendFile(targetPeer.id, f, (percent, speed, eta) => {
           setTransfers((prev) =>
             prev.map((t) => {
               if (t.id !== session.id) return t;

@@ -61,6 +61,7 @@ export const MobileView: React.FC<Props> = ({
       type: f.type || 'application/octet-stream',
       lastModified: f.lastModified,
       rawFile: f,
+      rawBlob: f,
       previewUrl: f.type.startsWith('image/') ? URL.createObjectURL(f) : undefined,
       blobUrl: URL.createObjectURL(f),
     }));
@@ -88,13 +89,45 @@ export const MobileView: React.FC<Props> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleDirectDownload = (fileRecord: FileItem) => {
+  const handleDirectDownload = async (fileRecord: FileItem) => {
+    // 1. Try Native Android / iOS Web Share API (Saves directly to Gallery / Files)
+    try {
+      let blobToShare = fileRecord.rawBlob;
+      if (!blobToShare && fileRecord.blobUrl) {
+        const resp = await fetch(fileRecord.blobUrl);
+        blobToShare = await resp.blob();
+      }
+
+      if (blobToShare && (navigator as any).canShare) {
+        const fileObj = new File([blobToShare], fileRecord.name, {
+          type: fileRecord.type || 'application/octet-stream',
+        });
+        if ((navigator as any).canShare({ files: [fileObj] })) {
+          await navigator.share({
+            files: [fileObj],
+            title: fileRecord.name,
+          });
+          return;
+        }
+      }
+    } catch (err) {
+      console.log('Share API fallback to standard download:', err);
+    }
+
+    // 2. Standard direct browser download
     const url = fileRecord.blobUrl || fileRecord.previewUrl || fileRecord.downloadUrl || (fileRecord.rawFile ? URL.createObjectURL(fileRecord.rawFile) : '');
     if (url) {
       const a = document.createElement('a');
       a.href = url;
       a.download = fileRecord.name;
+      a.target = '_blank';
+      document.body.appendChild(a);
       a.click();
+      setTimeout(() => {
+        try {
+          document.body.removeChild(a);
+        } catch {}
+      }, 1000);
     }
   };
 
@@ -354,17 +387,17 @@ export const MobileView: React.FC<Props> = ({
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => onPreviewFile(file)}
-                        className="p-1 bg-zinc-900 border border-white/10 text-white"
+                        className="p-1.5 bg-zinc-900 border border-white/10 text-white"
                         title="Preview"
                       >
-                        <Eye className="w-3 h-3" />
+                        <Eye className="w-3.5 h-3.5" />
                       </button>
 
                       <button
                         onClick={() => handleDirectDownload(file)}
-                        className="px-2 py-1 bg-white text-black font-bold text-[10px] uppercase flex items-center gap-1"
+                        className="px-2.5 py-1.5 bg-white text-black font-bold text-[10px] uppercase flex items-center gap-1"
                       >
-                        <Download className="w-3 h-3" />
+                        <Download className="w-3.5 h-3.5" />
                         <span>Save</span>
                       </button>
                     </div>
