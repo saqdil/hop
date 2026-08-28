@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { PeerDevice } from './types/peer';
 import { FileItem, TransferSession, ClipboardItem } from './types/transfer';
 import { getRealDevice, saveCustomDeviceName } from './engine/deviceDetector';
@@ -77,12 +77,14 @@ export const App: React.FC = () => {
     const joinTarget = urlParams.get('join');
 
     engine.init().then((peerId) => {
-      const pin = peerId.split('_').pop() || '1234';
+      const pin = peerId.replace('hop-', '') || '123456';
       setRoomPin(pin);
 
-      // If user opened a ?join= link from QR scan, connect automatically!
+      // If opened via QR scan with ?join=XXXXXX, connect to host automatically!
       if (joinTarget) {
-        engine.connectToPeer(joinTarget);
+        setTimeout(() => {
+          engine.connectToPeer(joinTarget);
+        }, 800);
       }
     });
 
@@ -144,6 +146,12 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleConnectToPin = (pin: string) => {
+    if (peerEngineRef.current && pin.trim()) {
+      peerEngineRef.current.connectToPeer(pin.trim());
+    }
+  };
+
   const handleSecurityAllow = (request: SecurityRequest, trustAlways: boolean) => {
     if (trustAlways) {
       const senderKey = `${request.sender.name}_${request.sender.ip}`;
@@ -161,7 +169,7 @@ export const App: React.FC = () => {
   // --- ACTIONS ---
   const handleSendFiles = async (files: FileItem[]) => {
     if (!selectedPeer || !peerEngineRef.current) {
-      alert('Please select or connect a device first!');
+      alert('Please connect a device first by scanning the QR code or entering a PIN!');
       return;
     }
 
@@ -320,18 +328,16 @@ export const App: React.FC = () => {
         <HotspotDirectModal
           isOpen={isHotspotModalOpen}
           onClose={() => setIsHotspotModalOpen(false)}
-          onEnterRoomCode={(code) => {
-            if (peerEngineRef.current) {
-              peerEngineRef.current.connectToPeer(`hop_${code}`);
-            }
-          }}
+          onEnterRoomCode={(code) => handleConnectToPin(code)}
         />
 
         <MobilePairModal
           isOpen={isQrModalOpen}
           onClose={() => setIsQrModalOpen(false)}
           localIp={selfDevice.ip}
+          roomPin={roomPin}
           onOpenMobileSimulator={() => setIsMobileMode(true)}
+          onConnectToPin={handleConnectToPin}
         />
 
         <MediaViewerModal
@@ -417,17 +423,15 @@ export const App: React.FC = () => {
         isOpen={isQrModalOpen}
         onClose={() => setIsQrModalOpen(false)}
         localIp={selfDevice.ip}
+        roomPin={roomPin}
         onOpenMobileSimulator={() => setIsMobileMode(true)}
+        onConnectToPin={handleConnectToPin}
       />
 
       <HotspotDirectModal
         isOpen={isHotspotModalOpen}
         onClose={() => setIsHotspotModalOpen(false)}
-        onEnterRoomCode={(code) => {
-          if (peerEngineRef.current) {
-            peerEngineRef.current.connectToPeer(`hop_${code}`);
-          }
-        }}
+        onEnterRoomCode={(code) => handleConnectToPin(code)}
       />
 
       <DownloadAppModal

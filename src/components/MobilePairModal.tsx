@@ -1,31 +1,44 @@
 ﻿import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, Smartphone, ShieldCheck, Copy, Check, Sparkles, Globe } from 'lucide-react';
+import { X, Smartphone, ShieldCheck, Copy, Check, Sparkles, Globe, ArrowRight, KeyRound } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   localIp: string;
+  roomPin: string;
   onOpenMobileSimulator: () => void;
+  onConnectToPin?: (pin: string) => void;
 }
 
 export const MobilePairModal: React.FC<Props> = ({
   isOpen,
   onClose,
+  roomPin,
   onOpenMobileSimulator,
+  onConnectToPin,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [manualPin, setManualPin] = useState('');
 
   if (!isOpen) return null;
 
   const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://hop-transfer.vercel.app';
-  const mobileUrl = `${currentOrigin}/?view=mobile`;
+  const mobileUrl = `${currentOrigin}/?join=${roomPin || '123456'}&view=mobile`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(mobileUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleManualConnect = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (manualPin.trim() && onConnectToPin) {
+      onConnectToPin(manualPin.trim());
+      onClose();
+    }
   };
 
   return (
@@ -34,7 +47,7 @@ export const MobilePairModal: React.FC<Props> = ({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-md rounded-3xl apple-card border border-white/15 p-6 shadow-2xl space-y-6"
+        className="w-full max-w-md rounded-3xl apple-card border border-white/15 p-6 shadow-2xl space-y-5"
       >
         {/* Modal Header */}
         <div className="flex items-center justify-between">
@@ -46,7 +59,7 @@ export const MobilePairModal: React.FC<Props> = ({
               <h3 className="font-semibold text-sm text-white font-sans">
                 Pair Phone (Android & iOS)
               </h3>
-              <p className="text-[11px] text-zinc-400 font-mono">Scan QR to connect instantly</p>
+              <p className="text-[11px] text-zinc-400 font-mono">Scan QR or enter Room PIN</p>
             </div>
           </div>
           <button
@@ -57,15 +70,25 @@ export const MobilePairModal: React.FC<Props> = ({
           </button>
         </div>
 
+        {/* PIN Code Badge */}
+        {roomPin && (
+          <div className="p-3.5 rounded-2xl bg-black/40 border border-white/[0.08] text-center space-y-1">
+            <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest block">Your Room PIN</span>
+            <div className="text-3xl font-mono font-bold tracking-widest text-sky-400">
+              {roomPin}
+            </div>
+          </div>
+        )}
+
         {/* QR Code Container */}
-        <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-black/40 border border-white/[0.08] space-y-3 shadow-inner">
-          <div className="p-4 bg-white rounded-2xl shadow-xl">
-            <QRCodeSVG value={mobileUrl} size={180} level="H" />
+        <div className="flex flex-col items-center justify-center p-5 rounded-2xl bg-black/40 border border-white/[0.08] space-y-3 shadow-inner">
+          <div className="p-3.5 bg-white rounded-2xl shadow-xl">
+            <QRCodeSVG value={mobileUrl} size={170} level="H" />
           </div>
 
           <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-mono">
             <Globe className="w-3.5 h-3.5 text-sky-400" />
-            <span className="truncate max-w-[260px] text-zinc-300">{mobileUrl}</span>
+            <span className="truncate max-w-[240px] text-zinc-300">{mobileUrl}</span>
             <button
               onClick={handleCopy}
               className="p-1 hover:bg-white/10 rounded-md text-zinc-400 hover:text-white transition-colors"
@@ -76,17 +99,30 @@ export const MobilePairModal: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Instructions */}
-        <div className="space-y-2 text-xs text-zinc-300 font-sans">
-          <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 flex items-center justify-center text-[10px] font-mono font-bold">1</span>
-            <span>Open Camera on iPhone or Chrome / Google Lens on Android.</span>
+        {/* Manual PIN Input Option */}
+        <form onSubmit={handleManualConnect} className="space-y-1.5">
+          <span className="text-[10px] font-mono text-zinc-400 block">Or Connect to another device PIN:</span>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <KeyRound className="w-3.5 h-3.5 absolute left-3 top-3 text-zinc-500" />
+              <input
+                type="text"
+                value={manualPin}
+                onChange={(e) => setManualPin(e.target.value)}
+                placeholder="Enter 6-digit PIN..."
+                className="w-full pl-8 pr-3 py-2 rounded-xl bg-black/50 border border-white/10 text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-sky-400"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={!manualPin.trim()}
+              className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-black font-sans font-bold text-xs flex items-center gap-1 disabled:opacity-40 shadow-sm"
+            >
+              <span>Join</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 flex items-center justify-center text-[10px] font-mono font-bold">2</span>
-            <span>Point at the QR code and tap the link to connect.</span>
-          </div>
-        </div>
+        </form>
 
         {/* Action Simulator Button */}
         <button
@@ -97,7 +133,7 @@ export const MobilePairModal: React.FC<Props> = ({
           className="w-full py-2.5 px-4 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-sky-300 font-sans font-semibold text-xs flex items-center justify-center gap-2 transition-colors border border-white/10"
         >
           <Sparkles className="w-4 h-4 text-sky-400" />
-          <span>Test Mobile View on this Screen</span>
+          <span>Open Mobile Simulator</span>
         </button>
 
         {/* Footer info */}

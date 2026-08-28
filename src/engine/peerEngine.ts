@@ -9,6 +9,8 @@ type FileCompleteCallback = (file: FileItem, session: TransferSession) => void;
 type ClipboardCallback = (item: ClipboardItem) => void;
 
 export class PeerEngine {
+  public myPeerId: string = '';
+  public roomPin: string = '';
   private peer: any = null;
   private connections: Map<string, DataConnection> = new Map();
   private connectedDeviceMap: Map<string, PeerDevice> = new Map();
@@ -35,10 +37,13 @@ export class PeerEngine {
     });
   }
 
-  public init(customPeerId?: string): Promise<string> {
+  public init(customPin?: string): Promise<string> {
     return new Promise((resolve) => {
       try {
-        const peerId = customPeerId || `hop_${this.selfDevice.id.slice(0, 8)}_${Math.floor(1000 + Math.random() * 9000)}`;
+        const pin = customPin || Math.floor(100000 + Math.random() * 900000).toString();
+        this.roomPin = pin;
+        const peerId = `hop-${pin}`;
+        this.myPeerId = peerId;
 
         const PeerConstructor = Peer || (window as any).Peer;
 
@@ -54,60 +59,77 @@ export class PeerEngine {
               { urls: 'stun:stun.l.google.com:19302' },
               { urls: 'stun:stun1.l.google.com:19302' },
               { urls: 'stun:stun2.l.google.com:19302' },
+              { urls: 'stun:stun3.l.google.com:19302' },
+              { urls: 'stun:stun4.l.google.com:19302' },
             ],
           },
         });
 
         this.peer.on('open', (id: string) => {
-          console.log('⚡ PeerJS Online with ID:', id);
+          console.log('⚡ Hop PeerJS Online with ID:', id);
+          this.myPeerId = id;
           resolve(id);
         });
 
         this.peer.on('connection', (conn: DataConnection) => {
-          this.setupConnection(conn);
+          this.setupConnection(conn, false);
         });
 
         this.peer.on('error', (err: any) => {
-          console.warn('PeerJS Non-Fatal Error:', err);
+          console.warn('PeerJS Error/Warning:', err);
+          // If ID is already taken, generate new pin and retry once
+          if (err.type === 'unavailable-id') {
+            const newPin = Math.floor(100000 + Math.random() * 900000).toString();
+            this.init(newPin).then(resolve);
+          }
         });
       } catch (e) {
         console.warn('Peer init catch:', e);
-        resolve(`hop_fallback_${Math.floor(1000 + Math.random() * 9000)}`);
+        resolve(`hop-${Math.floor(100000 + Math.random() * 900000)}`);
       }
     });
   }
 
-  public connectToPeer(remotePeerId: string): Promise<boolean> {
+  public connectToPeer(targetPinOrId: string): Promise<boolean> {
     return new Promise((resolve) => {
       if (!this.peer) return resolve(false);
 
+      const targetId = targetPinOrId.startsWith('hop-') ? targetPinOrId : `hop-${targetPinOrId}`;
+      console.log('⚡ Attempting P2P connection to target:', targetId);
+
       try {
-        const conn = this.peer.connect(remotePeerId, {
+        const conn = this.peer.connect(targetId, {
           reliable: true,
         });
 
-        this.setupConnection(conn);
+        this.setupConnection(conn, true);
 
         conn.on('open', () => {
+          console.log('⚡ Connected successfully to target:', targetId);
           resolve(true);
         });
 
-        conn.on('error', () => {
+        conn.on('error', (err: any) => {
+          console.warn('Connection error to target:', err);
           resolve(false);
         });
 
-        setTimeout(() => resolve(false), 8000);
-      } catch {
+        setTimeout(() => resolve(false), 10000);
+      } catch (err) {
+        console.warn('connectToPeer exception:', err);
         resolve(false);
       }
     });
   }
 
-  private setupConnection(conn: DataConnection) {
-    conn.on('open', () => {
-      this.connections.set(conn.peer, conn);
+  private setupConnection(conn: DataConnection, isInitiator: boolean) {
+    const remotePeerId = conn.peer;
 
-      // Exchange device metadata
+    conn.on('open', () => {
+      console.log(`⚡ DataChannel OPEN with ${remotePeerId} (initiator: ${isInitiator})`);
+      this.connections.set(remotePeerId, conn);
+
+      // Immediately exchange self device metadata
       conn.send({
         type: 'DEVICE_INFO',
         device: this.selfDevice,
@@ -115,25 +137,44 @@ export class PeerEngine {
     });
 
     conn.on('data', (data: any) => {
-      this.handleIncomingData(conn.peer, data);
+      this.handleIncomingData(remotePeerId, data, conn);
     });
 
     conn.on('close', () => {
-      this.connections.delete(conn.peer);
-      this.connectedDeviceMap.delete(conn.peer);
-      this.onDisconnectCbs.forEach((cb) => cb(conn.peer));
+      console.log(`⚡ DataChannel CLOSED with ${remotePeerId}`);
+      this.connections.delete(remotePeerId);
+      this.connectedDeviceMap.delete(remotePeerId);
+      this.onDisconnectCbs.forEach((cb) => cb(remotePeerId));
     });
 
     conn.on('error', () => {
-      this.connections.delete(conn.peer);
-      this.connectedDeviceMap.delete(conn.peer);
-      this.onDisconnectCbs.forEach((cb) => cb(conn.peer));
+      this.connections.delete(remotePeerId);
+      this.connectedDeviceMap.delete(remotePeerId);
+      this.onDisconnectCbs.forEach((cb) => cb(remotePeerId));
     });
   }
 
-  private handleIncomingData(remotePeerId: string, data: any) {
+  private handleIncomingData(remotePeerId: string, data: any, conn: DataConnection) {
     if (typeof data === 'object' && data !== null) {
       if (data.type === 'DEVICE_INFO') {
+        const remoteDevice: PeerDevice = {
+          ...data.device,
+          id: remotePeerId,
+          status: 'online',
+          lastSeen: Date.now(),
+        };
+        this.connectedDeviceMap.set(remotePeerId, remoteDevice);
+        this.onConnectCbs.forEach((cb) => cb(remoteDevice));
+
+        // If responder, send our info back if not already done
+        conn.send({
+          type: 'DEVICE_INFO_ACK',
+          device: this.selfDevice,
+        });
+        return;
+      }
+
+      if (data.type === 'DEVICE_INFO_ACK') {
         const remoteDevice: PeerDevice = {
           ...data.device,
           id: remotePeerId,
