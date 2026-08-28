@@ -15,7 +15,6 @@ import { MediaViewerModal } from './components/MediaViewerModal';
 import { DownloadAppModal } from './components/DownloadAppModal';
 import { SecurityPromptModal, SecurityRequest } from './components/SecurityPromptModal';
 import { MobileView } from './components/mobile/MobileView';
-import confetti from 'canvas-confetti';
 
 const STORAGE_KEY_TRUSTED = 'hop_trusted_devices';
 
@@ -95,7 +94,6 @@ export const App: React.FC = () => {
         return [...filtered, remoteDevice];
       });
       setSelectedPeer(remoteDevice);
-      confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
     });
 
     const unsubDisconnect = engine.onDisconnect((remotePeerId) => {
@@ -105,7 +103,6 @@ export const App: React.FC = () => {
 
     const unsubFileComplete = engine.onFileComplete((_completedFile, session) => {
       setTransfers((prev) => [session, ...prev]);
-      confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
     });
 
     const unsubClipboard = engine.onClipboard((item) => {
@@ -180,11 +177,11 @@ export const App: React.FC = () => {
       files,
       totalBytes: files.reduce((acc, f) => acc + f.size, 0),
       transferredBytes: 0,
-      speedMBs: 90.0,
+      speedMBs: 0,
       progressPercent: 0,
       status: 'transferring',
       startedAt: Date.now(),
-      etaSeconds: 2,
+      etaSeconds: 0,
       connectionMode: 'webrtc',
     };
 
@@ -195,16 +192,20 @@ export const App: React.FC = () => {
       try {
         await peerEngineRef.current.sendFile(selectedPeer.id, f, (percent, speed) => {
           setTransfers((prev) =>
-            prev.map((t) =>
-              t.id === session.id
-                ? {
-                    ...t,
-                    progressPercent: percent,
-                    transferredBytes: Math.round((t.totalBytes * percent) / 100),
-                    speedMBs: speed,
-                  }
-                : t
-            )
+            prev.map((t) => {
+              if (t.id !== session.id) return t;
+              const transferred = Math.round((t.totalBytes * percent) / 100);
+              const remaining = Math.max(0, t.totalBytes - transferred);
+              const speedBytesPerSec = speed * 1024 * 1024;
+              const eta = speedBytesPerSec > 0 ? Math.ceil(remaining / speedBytesPerSec) : 0;
+              return {
+                ...t,
+                progressPercent: percent,
+                transferredBytes: transferred,
+                speedMBs: speed,
+                etaSeconds: eta,
+              };
+            })
           );
         });
       } catch (err: any) {
@@ -213,9 +214,8 @@ export const App: React.FC = () => {
     }
 
     setTransfers((prev) =>
-      prev.map((t) => (t.id === session.id ? { ...t, progressPercent: 100, status: 'completed', completedAt: Date.now() } : t))
+      prev.map((t) => (t.id === session.id ? { ...t, progressPercent: 100, status: 'completed', completedAt: Date.now(), etaSeconds: 0 } : t))
     );
-    confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
   };
 
   const handleMobileSendFiles = async (files: FileItem[]) => {
@@ -232,11 +232,11 @@ export const App: React.FC = () => {
       files,
       totalBytes: files.reduce((acc, f) => acc + f.size, 0),
       transferredBytes: 0,
-      speedMBs: 92.5,
+      speedMBs: 0,
       progressPercent: 0,
       status: 'transferring',
       startedAt: Date.now(),
-      etaSeconds: 2,
+      etaSeconds: 0,
       connectionMode: 'webrtc',
     };
 
@@ -246,16 +246,20 @@ export const App: React.FC = () => {
       try {
         await peerEngineRef.current.sendFile(target.id, f, (percent, speed) => {
           setTransfers((prev) =>
-            prev.map((t) =>
-              t.id === session.id
-                ? {
-                    ...t,
-                    progressPercent: percent,
-                    transferredBytes: Math.round((t.totalBytes * percent) / 100),
-                    speedMBs: speed,
-                  }
-                : t
-            )
+            prev.map((t) => {
+              if (t.id !== session.id) return t;
+              const transferred = Math.round((t.totalBytes * percent) / 100);
+              const remaining = Math.max(0, t.totalBytes - transferred);
+              const speedBytesPerSec = speed * 1024 * 1024;
+              const eta = speedBytesPerSec > 0 ? Math.ceil(remaining / speedBytesPerSec) : 0;
+              return {
+                ...t,
+                progressPercent: percent,
+                transferredBytes: transferred,
+                speedMBs: speed,
+                etaSeconds: eta,
+              };
+            })
           );
         });
       } catch (err: any) {
@@ -264,9 +268,8 @@ export const App: React.FC = () => {
     }
 
     setTransfers((prev) =>
-      prev.map((t) => (t.id === session.id ? { ...t, progressPercent: 100, status: 'completed', completedAt: Date.now() } : t))
+      prev.map((t) => (t.id === session.id ? { ...t, progressPercent: 100, status: 'completed', completedAt: Date.now(), etaSeconds: 0 } : t))
     );
-    confetti({ particleCount: 70, spread: 65, origin: { y: 0.6 } });
   };
 
   const handleAddClipboardItem = (text: string) => {
@@ -355,7 +358,7 @@ export const App: React.FC = () => {
     );
   }
 
-  // DESKTOP STUDIO MODE (Windows / macOS / Linux)
+  // DESKTOP STUDIO MODE
   const activeTransfersCount = transfers.filter((t) => t.status === 'transferring').length;
 
   return (
@@ -371,10 +374,10 @@ export const App: React.FC = () => {
         clipboardItemsCount={clipboardItems.length}
       />
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 space-y-5">
         {/* VIEW 1: RADAR & FILE DROP */}
         {currentView === 'radar' && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <RadarView
               selfDevice={selfDevice}
               peers={peers}
@@ -453,8 +456,8 @@ export const App: React.FC = () => {
         onDecline={handleSecurityDecline}
       />
 
-      <footer className="border-t border-white/[0.08] py-5 text-center text-xs text-zinc-500 font-mono">
-        Hop &bull; direct P2P drop &amp; shared clipboard &bull; zero cloud &bull; Android APK &bull; iOS App &bull; PC Web Studio
+      <footer className="border-t border-white/[0.06] py-5 text-center text-xs text-zinc-600 font-mono">
+        Hop &bull; direct encrypted peer-to-peer streaming
       </footer>
     </div>
   );

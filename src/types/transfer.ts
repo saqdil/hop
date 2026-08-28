@@ -1,4 +1,4 @@
-﻿import { PeerDevice } from './peer';
+import { PeerDevice } from './peer';
 
 export interface FileItem {
   id: string;
@@ -46,4 +46,5 @@ export interface ClipboardItem {
   timestamp: number;
   isPinned: boolean;
   category: ClipboardCategory;
+  isSensitive?: boolean;
 }

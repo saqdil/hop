@@ -1,7 +1,6 @@
 ﻿import React, { useState } from 'react';
-import { ClipboardItem, ClipboardCategory } from '../types/transfer';
-import { PeerDevice } from '../types/peer';
-import { Clipboard, Send, Pin, Trash2, Copy, Check, Link, Key, Code, Sparkles, Smartphone, Laptop } from 'lucide-react';
+import { ClipboardItem } from '../types/transfer';
+import { Copy, Check, Pin, Trash2, Send, Laptop, Smartphone, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Props {
@@ -25,7 +24,12 @@ export const ClipboardSync: React.FC<Props> = ({
 }) => {
   const [inputText, setInputText] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState<ClipboardCategory | 'all'>('all');
+
+  const handleCopy = (item: ClipboardItem) => {
+    navigator.clipboard.writeText(item.text);
+    setCopiedId(item.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,145 +38,75 @@ export const ClipboardSync: React.FC<Props> = ({
     setInputText('');
   };
 
-  const handleCopy = (item: ClipboardItem) => {
-    navigator.clipboard.writeText(item.text);
-    setCopiedId(item.id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const getCategoryIcon = (category: ClipboardCategory) => {
-    switch (category) {
-      case 'url':
-        return Link;
-      case 'otp':
-        return Key;
-      case 'code':
-        return Code;
-      default:
-        return Clipboard;
-    }
-  };
-
-  const getDeviceIcon = (platform: PeerDevice['platform']) => {
-    switch (platform) {
-      case 'ios':
-      case 'android':
-        return Smartphone;
-      default:
-        return Laptop;
-    }
-  };
-
-  const filtered = clipboardItems.filter((i) => {
-    if (activeCategory === 'all') return true;
-    return i.category === activeCategory;
-  });
-
   return (
-    <div className="space-y-4">
-      {/* Header Card */}
-      <div className="apple-card rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-gradient-to-b from-sky-400 to-blue-600 shadow-sm text-white">
-            <Clipboard className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-base font-semibold text-white tracking-tight flex items-center gap-2 font-sans">
-              Universal Cross-Device Clipboard
-              <span className="text-xs font-mono px-2 py-0.5 rounded-lg bg-white/[0.08] text-zinc-300 border border-white/10">
-                {clipboardItems.length} items
-              </span>
-            </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              Copy on your PC, Mac, iPhone, or Android and it appears here in real time.
-            </p>
-          </div>
+    <div className="space-y-4 font-sans">
+      {/* Header & Toggle */}
+      <div className="rounded-2xl bg-[#121214] border border-white/[0.08] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-white">Shared Clipboard</h2>
+          <p className="text-xs text-zinc-400">
+            Text and snippets copied on any connected device mirror here automatically.
+          </p>
         </div>
 
-        {/* Auto Sync Toggle */}
         <div className="flex items-center gap-3">
           <button
             onClick={onToggleAutoSync}
-            className={`px-3 py-1.5 rounded-xl border text-xs font-mono flex items-center gap-1.5 transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5 ${
               autoSyncEnabled
-                ? 'bg-emerald-500/15 border-emerald-500/35 text-emerald-300 shadow-sm'
-                : 'bg-black/30 border-white/[0.08] text-zinc-400 hover:text-white'
+                ? 'bg-zinc-800 text-white border-white/20'
+                : 'bg-zinc-900 text-zinc-500 border-white/[0.06]'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Auto-Mirror: {autoSyncEnabled ? 'ACTIVE' : 'PAUSED'}</span>
+            <span>Auto Copy: {autoSyncEnabled ? 'ON' : 'OFF'}</span>
           </button>
 
           {clipboardItems.length > 0 && (
             <button
               onClick={onClearAll}
-              className="p-2 rounded-xl text-zinc-500 hover:text-rose-400 hover:bg-white/[0.08] transition-colors"
-              title="Clear vault history"
+              className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs transition-colors border border-white/[0.06]"
             >
-              <Trash2 className="w-4 h-4" />
+              Clear All
             </button>
           )}
         </div>
       </div>
 
-      {/* Input Blast Form */}
-      <form onSubmit={handleSend} className="apple-card rounded-2xl p-3 flex gap-2">
-        <input
-          type="text"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          placeholder="Type or paste text, URLs, OTP codes, or code snippets to hop to all devices..."
-          className="flex-1 h-10 px-3.5 rounded-xl bg-black/40 border border-white/[0.08] text-white placeholder-zinc-500 font-mono text-xs focus:outline-none focus:border-white/30"
-        />
-        <button
-          type="submit"
-          disabled={!inputText.trim()}
-          className="h-10 px-5 rounded-xl bg-white hover:bg-zinc-100 text-zinc-950 font-sans font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-[0.98] disabled:opacity-40"
-        >
-          <Send className="w-3.5 h-3.5" />
-          <span>Hop to LAN</span>
-        </button>
+      {/* Input Box */}
+      <form onSubmit={handleSend} className="space-y-2">
+        <div className="relative">
+          <textarea
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            placeholder="Type or paste text to broadcast to connected devices..."
+            rows={3}
+            className="w-full p-4 rounded-2xl bg-[#121214] border border-white/[0.08] text-white font-mono text-xs focus:outline-none focus:border-white/30"
+          />
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={!inputText.trim()}
+            className="px-4 py-2 rounded-lg bg-white text-zinc-950 font-semibold text-xs flex items-center gap-1.5 disabled:opacity-40 shadow-sm"
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span>Send to Devices</span>
+          </button>
+        </div>
       </form>
 
-      {/* Category Filter Pills */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-mono">
-        {[
-          { id: 'all', label: 'All Snippets' },
-          { id: 'url', label: 'Links (URLs)' },
-          { id: 'otp', label: 'OTP & 2FA Codes' },
-          { id: 'code', label: 'Code Snippets' },
-          { id: 'text', label: 'Plain Text' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveCategory(tab.id as any)}
-            className={`px-3 py-1.5 rounded-xl transition-colors shrink-0 ${
-              activeCategory === tab.id
-                ? 'bg-white/15 text-white font-semibold border border-white/10'
-                : 'text-zinc-400 hover:text-zinc-200 bg-black/20'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Clipboard Items Stream */}
+      {/* History List */}
       <div className="space-y-2.5">
-        {filtered.length === 0 ? (
-          <div className="apple-card rounded-2xl p-10 text-center space-y-2">
-            <Clipboard className="w-8 h-8 text-zinc-600 mx-auto" />
-            <h3 className="text-sm font-semibold text-white font-sans">No Clipboard History Yet</h3>
-            <p className="text-xs text-zinc-400 max-w-sm mx-auto">
-              Whenever you copy text on your phone or PC, Hop synchronizes it here instantly.
-            </p>
+        {clipboardItems.length === 0 ? (
+          <div className="rounded-2xl bg-[#121214] border border-white/[0.08] p-10 text-center text-xs text-zinc-500 font-mono">
+            No clipboard history yet. Copy or send text above.
           </div>
         ) : (
           <AnimatePresence>
-            {filtered.map((item) => {
-              const CategoryIcon = getCategoryIcon(item.category);
-              const DeviceIcon = getDeviceIcon(item.sourceDevice.platform);
+            {clipboardItems.map((item) => {
               const isCopied = copiedId === item.id;
+              const DeviceIcon = item.sourceDevice.platform === 'ios' || item.sourceDevice.platform === 'android' ? Smartphone : Laptop;
 
               return (
                 <motion.div
@@ -180,66 +114,58 @@ export const ClipboardSync: React.FC<Props> = ({
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98 }}
-                  className={`apple-card apple-card-hover rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                    item.isPinned ? 'border-l-4 border-l-sky-400' : ''
-                  }`}
+                  className="rounded-xl bg-[#121214] border border-white/[0.08] p-4 space-y-2.5 font-mono text-xs"
                 >
-                  {/* Left: Device Info & Text Content */}
-                  <div className="space-y-1.5 flex-1 min-w-0">
-                    <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-400">
-                      <span className="flex items-center gap-1 text-zinc-300 font-medium">
-                        <DeviceIcon className="w-3 h-3 text-sky-400" />
-                        {item.sourceDevice.name}
-                      </span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1 uppercase text-zinc-500">
-                        <CategoryIcon className="w-3 h-3" />
-                        {item.category}
-                      </span>
-                      <span>•</span>
-                      <span className="text-zinc-500">
-                        {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                  <div className="flex items-center justify-between text-zinc-400 text-[11px]">
+                    <div className="flex items-center gap-1.5 text-zinc-300">
+                      <DeviceIcon className="w-3.5 h-3.5 text-zinc-400" />
+                      <span>{item.sourceDevice.name}</span>
                     </div>
 
-                    <div className="font-mono text-xs text-zinc-100 break-all select-all bg-black/30 p-2.5 rounded-xl border border-white/[0.06]">
-                      {item.text}
+                    <div className="flex items-center gap-2">
+                      {item.isSensitive && (
+                        <span className="px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 text-[10px] flex items-center gap-1">
+                          <Lock className="w-2.5 h-2.5" /> Sensitive
+                        </span>
+                      )}
+                      <span>{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                   </div>
 
-                  {/* Right Actions */}
-                  <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center font-mono text-xs">
-                    <button
-                      onClick={() => handleCopy(item)}
-                      className={`px-3 py-1.5 rounded-xl font-medium flex items-center gap-1.5 transition-all shadow-sm active:scale-[0.98] ${
-                        isCopied
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                          : 'bg-white hover:bg-zinc-100 text-zinc-950'
-                      }`}
-                    >
-                      {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{isCopied ? 'Copied!' : 'Copy'}</span>
-                    </button>
+                  <div className="bg-black/50 p-3 rounded-lg border border-white/[0.06] text-zinc-200 break-all select-all font-mono">
+                    {item.text}
+                  </div>
 
+                  <div className="flex items-center justify-between pt-1">
                     <button
                       onClick={() => onTogglePin(item.id)}
-                      className={`p-2 rounded-xl transition-colors ${
-                        item.isPinned
-                          ? 'text-sky-400 bg-sky-500/10'
-                          : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.08]'
+                      className={`p-1.5 rounded-lg transition-colors ${
+                        item.isPinned ? 'text-white bg-zinc-800' : 'text-zinc-500 hover:text-zinc-300'
                       }`}
-                      title={item.isPinned ? 'Unpin' : 'Pin to top'}
+                      title={item.isPinned ? 'Unpin' : 'Pin'}
                     >
                       <Pin className="w-3.5 h-3.5" />
                     </button>
 
-                    <button
-                      onClick={() => onDeleteItem(item.id)}
-                      className="p-2 rounded-xl text-zinc-500 hover:text-rose-400 hover:bg-white/[0.08] transition-colors"
-                      title="Delete from vault"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onDeleteItem(item.id)}
+                        className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => handleCopy(item)}
+                        className={`px-3 py-1.5 rounded-lg font-sans font-medium text-xs flex items-center gap-1.5 transition-colors ${
+                          isCopied ? 'bg-zinc-800 text-emerald-400' : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-200'
+                        }`}
+                      >
+                        {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{isCopied ? 'Copied' : 'Copy'}</span>
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               );

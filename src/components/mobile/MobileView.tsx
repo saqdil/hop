@@ -1,7 +1,7 @@
 ﻿import React, { useState, useRef } from 'react';
 import { PeerDevice } from '../../types/peer';
 import { FileItem, ClipboardItem, TransferSession } from '../../types/transfer';
-import { Laptop, Camera, UploadCloud, Clipboard, Send, Copy, Check, Download, Inbox, Zap, ArrowDownToLine, RefreshCw, Eye, Radio, Image, Video, Music, QrCode } from 'lucide-react';
+import { Laptop, Camera, UploadCloud, Clipboard, Send, Copy, Check, Download, Inbox, ArrowDownToLine, RefreshCw, Eye, Radio, Image, Video, Music, QrCode } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Props {
@@ -107,7 +107,7 @@ export const MobileView: React.FC<Props> = ({
   });
 
   return (
-    <div className="min-h-screen bg-[#000000] text-[#f5f5f7] flex flex-col font-sans max-w-lg mx-auto pb-24 select-none">
+    <div className="min-h-screen bg-black text-[#f5f5f7] flex flex-col font-sans max-w-lg mx-auto pb-24 select-none">
       {/* Hidden File Inputs */}
       <input ref={fileInputRef} type="file" multiple onChange={(e) => handleFilesSelected(e.target.files)} className="hidden" />
       <input ref={imageInputRef} type="file" multiple accept="image/*" onChange={(e) => handleFilesSelected(e.target.files)} className="hidden" />
@@ -116,16 +116,16 @@ export const MobileView: React.FC<Props> = ({
       <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={(e) => handleFilesSelected(e.target.files)} className="hidden" />
 
       {/* Top Mobile Header */}
-      <header className="sticky top-0 z-40 px-4 py-3 bg-[#121214]/90 backdrop-blur-2xl border-b border-white/[0.08] flex items-center justify-between">
+      <header className="sticky top-0 z-40 px-4 py-3 bg-[#0d0d0f]/90 backdrop-blur-2xl border-b border-white/[0.08] flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-b from-sky-400 to-blue-600 flex items-center justify-center text-white shadow-md">
-            <Zap className="w-4 h-4 fill-white" />
+          <div className="w-6 h-6 rounded-md bg-white text-zinc-950 flex items-center justify-center font-bold text-xs font-mono">
+            H
           </div>
           <div>
-            <h1 className="text-sm font-bold text-white font-sans tracking-tight">{selfDevice.name}</h1>
+            <h1 className="text-xs font-semibold text-white tracking-tight">{selfDevice.name}</h1>
             <div className="text-[10px] font-mono text-zinc-400 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>{targetDesktop ? `Connected: ${targetDesktop.name}` : 'P2P Online'}</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span>{targetDesktop ? `Connected: ${targetDesktop.name}` : 'P2P Ready'}</span>
             </div>
           </div>
         </div>
@@ -134,7 +134,7 @@ export const MobileView: React.FC<Props> = ({
           {onOpenQrPairing && (
             <button
               onClick={onOpenQrPairing}
-              className="p-1.5 rounded-xl bg-white/[0.08] text-sky-300 hover:text-white transition-colors"
+              className="p-1.5 rounded-lg bg-zinc-900 text-zinc-300 hover:text-white border border-white/[0.08] transition-colors"
             >
               <QrCode className="w-4 h-4" />
             </button>
@@ -142,127 +142,115 @@ export const MobileView: React.FC<Props> = ({
 
           <button
             onClick={onOpenHotspotModal}
-            className="px-2.5 py-1 rounded-xl bg-white/[0.08] text-sky-400 text-xs font-mono flex items-center gap-1 border border-white/10"
+            className="px-2.5 py-1 rounded-lg bg-zinc-900 text-zinc-300 text-xs font-mono flex items-center gap-1 border border-white/[0.08]"
           >
-            <Radio className="w-3 h-3 animate-pulse" />
+            <Radio className="w-3 h-3" />
             <span>P2P</span>
           </button>
 
           <button
             onClick={() => window.location.reload()}
-            className="p-1.5 rounded-xl bg-white/[0.06] text-zinc-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-lg bg-zinc-900 text-zinc-400 hover:text-white border border-white/[0.08] transition-colors"
           >
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <main className="flex-1 p-4 space-y-4">
-        {/* PWA 1-Tap Home Screen Tip Banner */}
-        <div className="p-3 rounded-2xl bg-gradient-to-r from-sky-500/15 to-blue-600/15 border border-sky-400/25 flex items-center justify-between text-xs font-sans">
-          <div className="flex items-center gap-2">
-            <span className="text-base">📱</span>
-            <span className="text-zinc-200 text-[11px]">
-              Tap <strong>Share &rarr; Add to Home Screen</strong> to install Hop as an App!
-            </span>
-          </div>
-        </div>
-
-        {/* TAB 1: SEND PHOTOS & FILES */}
+        {/* TAB 1: SEND */}
         {activeTab === 'send' && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Big Tap Card */}
             <motion.div
               whileTap={{ scale: 0.98 }}
               onClick={() => fileInputRef.current?.click()}
-              className="apple-card rounded-3xl p-8 text-center flex flex-col items-center justify-center space-y-3 cursor-pointer border border-sky-400/30 bg-gradient-to-b from-sky-500/10 via-[#1c1c1e] to-[#121214] shadow-xl"
+              className="rounded-2xl p-7 text-center flex flex-col items-center justify-center space-y-3 cursor-pointer border border-white/[0.12] bg-[#121214] hover:bg-[#161618] transition-colors"
             >
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-b from-sky-400 to-blue-600 text-white flex items-center justify-center shadow-lg">
-                <UploadCloud className="w-8 h-8" />
+              <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-white/10 text-white flex items-center justify-center">
+                <UploadCloud className="w-7 h-7" />
               </div>
 
               <div>
-                <span className="text-lg font-bold text-white font-sans block">
+                <span className="text-base font-semibold text-white block">
                   Tap to Send Files
                 </span>
-                <span className="text-xs text-zinc-400 mt-1 block">
-                  {targetDesktop ? `Direct P2P drop to ${targetDesktop.name}` : 'Drop files to connected device'}
+                <span className="text-xs text-zinc-400 mt-0.5 block">
+                  {targetDesktop ? `Direct stream to ${targetDesktop.name}` : 'Drop files to connected device'}
                 </span>
               </div>
 
-              <div className="mt-2 px-5 py-2.5 rounded-xl bg-white text-zinc-950 font-semibold text-xs shadow-md">
+              <div className="px-4 py-2 rounded-lg bg-white text-zinc-950 font-semibold text-xs shadow-sm">
                 Choose Files
               </div>
             </motion.div>
 
-            {/* Category Grid (like Xender) */}
-            <div className="grid grid-cols-2 gap-2.5 font-sans text-xs">
+            {/* Category Grid */}
+            <div className="grid grid-cols-2 gap-2.5 text-xs">
               <button
                 onClick={() => imageInputRef.current?.click()}
-                className="p-3.5 rounded-2xl bg-[#1c1c1e] border border-white/10 flex items-center gap-2.5 hover:bg-[#242426] transition-colors text-left"
+                className="p-3.5 rounded-xl bg-[#121214] border border-white/[0.08] flex items-center gap-2.5 hover:bg-zinc-900 transition-colors text-left"
               >
-                <div className="p-2 rounded-xl bg-rose-500/20 text-rose-300">
+                <div className="p-2 rounded-lg bg-zinc-900 border border-white/10 text-zinc-300">
                   <Image className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="font-semibold text-white block">Photos</span>
-                  <span className="text-[10px] text-zinc-400">Gallery</span>
+                  <span className="font-medium text-zinc-200 block">Photos</span>
+                  <span className="text-[10px] text-zinc-500">Gallery</span>
                 </div>
               </button>
 
               <button
                 onClick={() => videoInputRef.current?.click()}
-                className="p-3.5 rounded-2xl bg-[#1c1c1e] border border-white/10 flex items-center gap-2.5 hover:bg-[#242426] transition-colors text-left"
+                className="p-3.5 rounded-xl bg-[#121214] border border-white/[0.08] flex items-center gap-2.5 hover:bg-zinc-900 transition-colors text-left"
               >
-                <div className="p-2 rounded-xl bg-purple-500/20 text-purple-300">
+                <div className="p-2 rounded-lg bg-zinc-900 border border-white/10 text-zinc-300">
                   <Video className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="font-semibold text-white block">Videos</span>
-                  <span className="text-[10px] text-zinc-400">Movies / Clips</span>
+                  <span className="font-medium text-zinc-200 block">Videos</span>
+                  <span className="text-[10px] text-zinc-500">Clips</span>
                 </div>
               </button>
 
               <button
                 onClick={() => audioInputRef.current?.click()}
-                className="p-3.5 rounded-2xl bg-[#1c1c1e] border border-white/10 flex items-center gap-2.5 hover:bg-[#242426] transition-colors text-left"
+                className="p-3.5 rounded-xl bg-[#121214] border border-white/[0.08] flex items-center gap-2.5 hover:bg-zinc-900 transition-colors text-left"
               >
-                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-300">
+                <div className="p-2 rounded-lg bg-zinc-900 border border-white/10 text-zinc-300">
                   <Music className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="font-semibold text-white block">Music</span>
-                  <span className="text-[10px] text-zinc-400">Audio files</span>
+                  <span className="font-medium text-zinc-200 block">Music</span>
+                  <span className="text-[10px] text-zinc-500">Audio</span>
                 </div>
               </button>
 
               <button
                 onClick={() => cameraInputRef.current?.click()}
-                className="p-3.5 rounded-2xl bg-[#1c1c1e] border border-white/10 flex items-center gap-2.5 hover:bg-[#242426] transition-colors text-left"
+                className="p-3.5 rounded-xl bg-[#121214] border border-white/[0.08] flex items-center gap-2.5 hover:bg-zinc-900 transition-colors text-left"
               >
-                <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300">
+                <div className="p-2 rounded-lg bg-zinc-900 border border-white/10 text-zinc-300">
                   <Camera className="w-4 h-4" />
                 </div>
                 <div>
-                  <span className="font-semibold text-white block">Camera</span>
-                  <span className="text-[10px] text-zinc-400">Take Photo</span>
+                  <span className="font-medium text-zinc-200 block">Camera</span>
+                  <span className="text-[10px] text-zinc-500">Take Photo</span>
                 </div>
               </button>
             </div>
 
-            {/* Uploading progress banner */}
+            {/* Uploading progress */}
             {isUploading && (
-              <div className="apple-card rounded-2xl p-4 space-y-2">
+              <div className="rounded-xl bg-[#121214] border border-white/[0.08] p-4 space-y-2">
                 <div className="flex justify-between text-xs font-mono text-zinc-300">
-                  <span className="flex items-center gap-1.5 text-sky-400">
-                    <UploadCloud className="w-4 h-4 animate-bounce" /> Streaming direct to {targetDesktop?.name || 'Device'}...
-                  </span>
+                  <span>Streaming to {targetDesktop?.name || 'Device'}...</span>
                   <span>{uploadPercent}%</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-black/40 overflow-hidden">
+                <div className="w-full h-1.5 rounded-full bg-zinc-900 overflow-hidden">
                   <div
-                    className="h-full bg-sky-400 transition-all duration-300"
+                    className="h-full bg-white transition-all duration-200"
                     style={{ width: `${uploadPercent}%` }}
                   />
                 </div>
@@ -271,38 +259,36 @@ export const MobileView: React.FC<Props> = ({
           </div>
         )}
 
-        {/* TAB 2: UNIVERSAL LIVE CLIPBOARD */}
+        {/* TAB 2: CLIPBOARD */}
         {activeTab === 'clipboard' && (
-          <div className="space-y-4">
-            {/* Send to PC Input */}
+          <div className="space-y-3">
             <form onSubmit={handleSendText} className="space-y-2">
               <textarea
                 value={mobileText}
                 onChange={(e) => setMobileText(e.target.value)}
-                placeholder="Type or paste anything on your phone to instantly mirror to PC/Mac..."
+                placeholder="Type or paste text to share across devices..."
                 rows={3}
-                className="w-full p-3.5 rounded-2xl bg-[#1c1c1e] border border-white/10 text-white font-mono text-xs focus:outline-none focus:border-sky-400 shadow-inner"
+                className="w-full p-3.5 rounded-xl bg-[#121214] border border-white/[0.08] text-white font-mono text-xs focus:outline-none focus:border-white/30"
               />
 
               <button
                 type="submit"
                 disabled={!mobileText.trim()}
-                className="w-full py-3 rounded-2xl bg-gradient-to-b from-sky-400 to-blue-600 text-white font-sans font-semibold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-[0.98] disabled:opacity-40"
+                className="w-full py-2.5 rounded-xl bg-white text-zinc-950 font-semibold text-xs flex items-center justify-center gap-1.5 disabled:opacity-40"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>Hop Text to Connected Devices</span>
+                <span>Send Text to Devices</span>
               </button>
             </form>
 
-            {/* Incoming Items */}
             <div className="space-y-2">
-              <span className="text-[11px] font-mono text-zinc-400 block uppercase tracking-wider">
-                Live Shared Clipboard
+              <span className="text-[11px] font-mono text-zinc-500 block uppercase tracking-wider">
+                Shared Clipboard
               </span>
 
               {clipboardItems.length === 0 ? (
-                <div className="apple-card rounded-2xl p-6 text-center text-xs text-zinc-500 font-mono">
-                  Copy anything on your PC/Mac and it appears here in real time.
+                <div className="rounded-xl bg-[#121214] border border-white/[0.08] p-6 text-center text-xs text-zinc-500 font-mono">
+                  Copied text from PC or phone appears here instantly.
                 </div>
               ) : (
                 clipboardItems.map((item) => {
@@ -310,27 +296,25 @@ export const MobileView: React.FC<Props> = ({
                   return (
                     <div
                       key={item.id}
-                      className="apple-card rounded-2xl p-3.5 space-y-2 font-mono text-xs"
+                      className="rounded-xl bg-[#121214] border border-white/[0.08] p-3.5 space-y-2 font-mono text-xs"
                     >
                       <div className="flex items-center justify-between text-[11px] text-zinc-400">
-                        <span className="text-sky-300 font-medium">{item.sourceDevice.name}</span>
+                        <span className="text-zinc-200">{item.sourceDevice.name}</span>
                         <span>{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
 
-                      <div className="bg-black/40 p-2.5 rounded-xl border border-white/[0.06] text-white break-all select-all">
+                      <div className="bg-black/50 p-2.5 rounded-lg border border-white/[0.06] text-zinc-200 break-all select-all">
                         {item.text}
                       </div>
 
                       <button
                         onClick={() => handleCopy(item.text, item.id)}
-                        className={`w-full py-2 rounded-xl font-sans font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors ${
-                          isCopied
-                            ? 'bg-emerald-500 text-black shadow-md'
-                            : 'bg-white/[0.08] hover:bg-white/15 text-white'
+                        className={`w-full py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                          isCopied ? 'bg-zinc-800 text-emerald-400' : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-200'
                         }`}
                       >
                         {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{isCopied ? 'Copied to Phone Clipboard!' : 'Copy to Phone'}</span>
+                        <span>{isCopied ? 'Copied' : 'Copy'}</span>
                       </button>
                     </div>
                   );
@@ -340,53 +324,52 @@ export const MobileView: React.FC<Props> = ({
           </div>
         )}
 
-        {/* TAB 3: INCOMING & RECEIVED FILES */}
+        {/* TAB 3: RECEIVED */}
         {activeTab === 'inbox' && (
           <div className="space-y-3">
-            <span className="text-[11px] font-mono text-zinc-400 block uppercase tracking-wider">
-              Received Files ({allReceivedFiles.length})
+            <span className="text-[11px] font-mono text-zinc-500 block uppercase tracking-wider">
+              Received ({allReceivedFiles.length})
             </span>
 
             {allReceivedFiles.length === 0 ? (
-              <div className="apple-card rounded-2xl p-8 text-center space-y-2">
-                <Inbox className="w-8 h-8 text-zinc-600 mx-auto" />
-                <h3 className="text-sm font-semibold text-white font-sans">No Files Received Yet</h3>
-                <p className="text-xs text-zinc-400">
-                  Drop files from your Mac/PC to view and save them here.
+              <div className="rounded-xl bg-[#121214] border border-white/[0.08] p-8 text-center space-y-2">
+                <Inbox className="w-6 h-6 text-zinc-600 mx-auto" />
+                <h3 className="text-sm font-semibold text-white">No Received Files</h3>
+                <p className="text-xs text-zinc-500">
+                  Files dropped to this device will appear here.
                 </p>
               </div>
             ) : (
               allReceivedFiles.map(({ file, session }) => (
-                <div key={file.id} className="apple-card rounded-2xl p-4 space-y-3 font-mono text-xs">
+                <div key={file.id} className="rounded-xl bg-[#121214] border border-white/[0.08] p-3.5 space-y-2.5 font-mono text-xs">
                   <div className="flex items-center justify-between text-zinc-400 text-[11px]">
-                    <span className="text-white font-semibold flex items-center gap-1">
-                      <Laptop className="w-3 h-3 text-sky-400" />
-                      From {session.sender.name}
+                    <span className="text-zinc-200 flex items-center gap-1">
+                      <Laptop className="w-3 h-3 text-zinc-400" />
+                      {session.sender.name}
                     </span>
                     <span>{new Date(session.completedAt || session.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
 
-                  {/* File preview card */}
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-black/40 border border-white/[0.06] gap-2">
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-black/40 border border-white/[0.06] gap-2">
                     <div className="truncate flex-1">
                       <div className="text-white font-medium truncate">{file.name}</div>
-                      <div className="text-zinc-500 text-[10px]">{formatBytes(file.size)} &bull; {file.type || 'File'}</div>
+                      <div className="text-zinc-500 text-[10px]">{formatBytes(file.size)}</div>
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         onClick={() => onPreviewFile(file)}
-                        className="p-2 rounded-xl bg-white/[0.08] hover:bg-white/15 text-sky-300 transition-colors"
-                        title="View Fullscreen"
+                        className="p-1.5 rounded-lg bg-zinc-800 text-zinc-300"
+                        title="Preview"
                       >
-                        <Eye className="w-4 h-4" />
+                        <Eye className="w-3.5 h-3.5" />
                       </button>
 
                       <button
                         onClick={() => handleDirectDownload(file)}
-                        className="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-sans font-bold text-xs flex items-center gap-1 shadow-sm"
+                        className="px-2.5 py-1.5 rounded-lg bg-white text-zinc-950 font-bold text-xs flex items-center gap-1"
                       >
-                        <Download className="w-3.5 h-3.5" />
+                        <Download className="w-3 h-3" />
                         <span>Save</span>
                       </button>
                     </div>
@@ -398,38 +381,38 @@ export const MobileView: React.FC<Props> = ({
         )}
       </main>
 
-      {/* Native Bottom App Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-[#121214]/95 backdrop-blur-2xl border-t border-white/[0.08] px-3 py-2 flex items-center justify-around z-40">
+      {/* Bottom App Bar */}
+      <nav className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-[#0d0d0f]/95 backdrop-blur-2xl border-t border-white/[0.08] px-4 py-2 flex items-center justify-around z-40">
         <button
           onClick={() => setActiveTab('send')}
           className={`flex flex-col items-center gap-1 py-1 px-4 rounded-xl transition-colors ${
-            activeTab === 'send' ? 'text-sky-400 font-bold' : 'text-zinc-400'
+            activeTab === 'send' ? 'text-white font-bold' : 'text-zinc-500'
           }`}
         >
-          <UploadCloud className="w-5 h-5" />
-          <span className="text-[10px] font-sans">Send</span>
+          <UploadCloud className="w-4 h-4" />
+          <span className="text-[10px]">Send</span>
         </button>
 
         <button
           onClick={() => setActiveTab('clipboard')}
           className={`flex flex-col items-center gap-1 py-1 px-4 rounded-xl transition-colors ${
-            activeTab === 'clipboard' ? 'text-sky-400 font-bold' : 'text-zinc-400'
+            activeTab === 'clipboard' ? 'text-white font-bold' : 'text-zinc-500'
           }`}
         >
-          <Clipboard className="w-5 h-5" />
-          <span className="text-[10px] font-sans">Clipboard</span>
+          <Clipboard className="w-4 h-4" />
+          <span className="text-[10px]">Clipboard</span>
         </button>
 
         <button
           onClick={() => setActiveTab('inbox')}
           className={`flex flex-col items-center gap-1 py-1 px-4 rounded-xl transition-colors relative ${
-            activeTab === 'inbox' ? 'text-sky-400 font-bold' : 'text-zinc-400'
+            activeTab === 'inbox' ? 'text-white font-bold' : 'text-zinc-500'
           }`}
         >
-          <ArrowDownToLine className="w-5 h-5" />
-          <span className="text-[10px] font-sans">Received</span>
+          <ArrowDownToLine className="w-4 h-4" />
+          <span className="text-[10px]">Received</span>
           {allReceivedFiles.length > 0 && (
-            <span className="absolute top-0 right-3 w-4 h-4 rounded-full bg-emerald-500 text-black font-mono text-[9px] font-bold flex items-center justify-center">
+            <span className="absolute top-0 right-2 w-3.5 h-3.5 rounded-full bg-white text-zinc-950 font-mono text-[9px] font-bold flex items-center justify-center">
               {allReceivedFiles.length}
             </span>
           )}

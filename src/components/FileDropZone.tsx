@@ -40,7 +40,7 @@ export const FileDropZone: React.FC<Props> = ({ selectedPeer, onSendFiles }) => 
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Hidden File Inputs */}
       <input ref={fileInputRef} type="file" multiple onChange={(e) => processFileList(e.target.files)} className="hidden" />
       <input ref={imageInputRef} type="file" multiple accept="image/*" onChange={(e) => processFileList(e.target.files)} className="hidden" />
@@ -49,7 +49,7 @@ export const FileDropZone: React.FC<Props> = ({ selectedPeer, onSendFiles }) => 
 
       {/* Main Drag & Drop Zone */}
       <motion.div
-        whileHover={{ scale: 1.005 }}
+        whileHover={{ scale: 1.002 }}
         onDragOver={(e) => {
           e.preventDefault();
           setIsDragOver(true);
@@ -57,79 +57,79 @@ export const FileDropZone: React.FC<Props> = ({ selectedPeer, onSendFiles }) => 
         onDragLeave={() => setIsDragOver(false)}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`w-full rounded-3xl p-8 sm:p-10 border-2 border-dashed cursor-pointer transition-all flex flex-col items-center justify-center text-center relative overflow-hidden shadow-xl ${
+        className={`w-full rounded-2xl p-8 border-2 border-dashed cursor-pointer transition-all flex flex-col items-center justify-center text-center relative overflow-hidden ${
           isDragOver
-            ? 'border-sky-400 bg-sky-500/10 shadow-2xl scale-[1.01]'
-            : 'border-white/15 hover:border-white/30 bg-[#121214]/60 hover:bg-[#161618]/80'
+            ? 'border-white bg-zinc-800/80 shadow-xl'
+            : 'border-white/15 hover:border-white/30 bg-[#121214] hover:bg-[#161618]'
         }`}
       >
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-b from-sky-400 to-blue-600 flex items-center justify-center text-white shadow-lg mb-4">
-          <UploadCloud className="w-8 h-8" />
+        <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-300 shadow-sm mb-3">
+          <UploadCloud className="w-6 h-6" />
         </div>
 
-        <h3 className="text-base font-bold text-white font-sans">
-          {selectedPeer ? `Drop files to send to ${selectedPeer.name}` : 'Drop files or browse from device'}
+        <h3 className="text-sm font-semibold text-white font-sans">
+          {selectedPeer ? `Drop files to send to ${selectedPeer.name}` : 'Drop files or browse'}
         </h3>
-        <p className="text-xs text-zinc-400 mt-1 max-w-md">
-          High-speed direct P2P streaming. Photos, 4K videos, documents, music, and folders without file size limits.
+        <p className="text-xs text-zinc-400 mt-1 max-w-sm">
+          Encrypted P2P streaming. Photos, videos, documents, and folders without file size limits.
         </p>
 
-        <div className="mt-4 px-5 py-2 rounded-xl bg-white text-zinc-950 font-semibold text-xs shadow-md">
+        <div className="mt-4 px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-white font-medium text-xs">
           Browse Files
         </div>
       </motion.div>
 
-      {/* Quick Category Buttons (like Xender) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-sans text-xs">
+      {/* Category Buttons */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 font-sans text-xs">
         <button
           onClick={() => imageInputRef.current?.click()}
-          className="p-3.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.10] border border-white/[0.08] flex items-center gap-3 transition-colors text-left group"
+          className="p-3 rounded-xl bg-[#121214] hover:bg-zinc-900 border border-white/[0.08] flex items-center gap-2.5 transition-colors text-left"
         >
-          <div className="p-2 rounded-xl bg-rose-500/20 text-rose-300 group-hover:scale-110 transition-transform">
+          <div className="p-2 rounded-lg bg-zinc-900 border border-white/10 text-zinc-300">
             <Image className="w-4 h-4" />
           </div>
           <div>
-            <span className="font-semibold text-white block">Photos</span>
-            <span className="text-[10px] text-zinc-400 font-mono">PNG, JPG, HEIC</span>
+            <span className="font-medium text-zinc-200 block">Photos</span>
+            <span className="text-[10px] text-zinc-500 font-mono">PNG, JPG, HEIC</span>
           </div>
         </button>
 
         <button
           onClick={() => videoInputRef.current?.click()}
-          className="p-3.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.10] border border-white/[0.08] flex items-center gap-3 transition-colors text-left group"
+          className="p-3 rounded-xl bg-[#121214] hover:bg-zinc-900 border border-white/[0.08] flex items-center gap-2.5 transition-colors text-left"
         >
-          <div className="p-2 rounded-xl bg-purple-500/20 text-purple-300 group-hover:scale-110 transition-transform">
+          <div className="p-2 rounded-lg bg-zinc-900 border border-white/10 text-zinc-300">
             <Video className="w-4 h-4" />
           </div>
           <div>
-            <span className="font-semibold text-white block">Videos</span>
-            <span className="text-[10px] text-zinc-400 font-mono">MP4, MOV, 4K</span>
+            <span className="font-medium text-zinc-200 block">Videos</span>
+            <span className="text-[10px] text-zinc-500 font-mono">MP4, MOV, 4K</span>
           </div>
         </button>
 
         <button
           onClick={() => audioInputRef.current?.click()}
-          className="p-3.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.10] border border-white/[0.08] flex items-center gap-3 transition-colors text-left group"
+          className="p-3 rounded-xl bg-[#121214] hover:bg-zinc-900 border border-white/[0.08] flex items-center gap-2.5 transition-colors text-left"
         >
-          <div className="p-2 rounded-xl bg-amber-500/20 text-amber-300 group-hover:scale-110 transition-transform">
+          <div className="p-2 rounded-lg bg-zinc-900 border border-white/10 text-zinc-300">
             <Music className="w-4 h-4" />
           </div>
           <div>
-            <span className="font-semibold text-white block">Music</span>
-            <span className="text-[10px] text-zinc-400 font-mono">MP3, WAV, FLAC</span>
+            <span className="font-medium text-zinc-200 block">Music</span>
+            <span className="text-[10px] text-zinc-500 font-mono">Audio files</span>
           </div>
         </button>
 
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="p-3.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.10] border border-white/[0.08] flex items-center gap-3 transition-colors text-left group"
+          className="p-3 rounded-xl bg-[#121214] hover:bg-zinc-900 border border-white/[0.08] flex items-center gap-2.5 transition-colors text-left"
         >
-          <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300 group-hover:scale-110 transition-transform">
+          <div className="p-2 rounded-lg bg-zinc-900 border border-white/10 text-zinc-300">
             <FileText className="w-4 h-4" />
           </div>
           <div>
-            <span className="font-semibold text-white block">Documents</span>
-            <span className="text-[10px] text-zinc-400 font-mono">PDF, DOC, ZIP</span>
+            <span className="font-medium text-zinc-200 block">Documents</span>
+            <span className="text-[10px] text-zinc-500 font-mono">PDF, ZIP, DOC</span>
           </div>
         </button>
       </div>
